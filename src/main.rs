@@ -1,23 +1,5 @@
-
-use serde::Deserialize;
-
-#[derive(Debug, Deserialize)]
-struct TickerDTO {
-    price: String,
-    volume: String,
-}
-
-struct Ticker {
-    name: String,
-    price: i128,
-    volume: i128
-}
-
-impl Ticker {
-    fn new(name: String, ticker_dto: TickerDTO) -> Self {
-        Self { name, price: (), volume: () }
-    }
-}
+mod models;
+use models::{ticker::Ticker, ticker_dto::TickerDTO};
 
 fn main() {
     let runtime = tokio::runtime::Runtime::new().unwrap();
@@ -27,10 +9,13 @@ fn main() {
     }
 }
 
+
+
+
 async fn test() -> Result<(), Box<dyn std::error::Error>> {
     let url = "https://api.exchange.coinbase.com/products/BTC-USD/ticker";
 
-    let ticker: TickerDTO = reqwest::Client::new()
+    let ticker_dto: TickerDTO = reqwest::Client::new()
         .get(url)
         .send()
         .await?
@@ -38,8 +23,17 @@ async fn test() -> Result<(), Box<dyn std::error::Error>> {
         .json()
         .await?;
 
-    println!("BTC/USD last price: {}", ticker.price);
-    println!("BTC/USD 24h volume: {}", ticker.volume);
+    let ticker = Ticker::new("BTC", "coinbase", ticker_dto)?;
+
+    println!(
+        "{:?}-{:?} last price: {}",
+        ticker.asset, ticker.venue, ticker.price.0
+    );
+    println!(
+        "{:?}-{:?} 24h volume: {}",
+        ticker.asset, ticker.venue, ticker.volume.0
+    );
 
     Ok(())
 }
+
