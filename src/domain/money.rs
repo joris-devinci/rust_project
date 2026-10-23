@@ -31,6 +31,14 @@ impl Amount {
             .checked_mul(price.0)
             .map(|value| UsdValue(value / PRICE_SCALE))
     }
+
+    pub fn checked_add(self, other: Self) -> Option<Self> {
+        self.0.checked_add(other.0).map(Self)
+    }
+
+    pub fn checked_sub(self, other: Self) -> Option<Self> {
+        self.0.checked_sub(other.0).map(Self)
+    }
 }
 
 #[cfg(test)]
