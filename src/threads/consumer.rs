@@ -35,6 +35,6 @@ pub async fn consumer() -> Result<(), Box<dyn std::error::Error + Send + Sync>> 
         .execute(&pool)
         .await?;
 
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        // tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     }
 }
