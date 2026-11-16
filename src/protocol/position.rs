@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 
-use crate::domain::{Amount, Asset};
+use crate::domain::{Amount, Asset, Bps, PriceFeed};
 
-use super::error::LendingError;
+use super::{
+    error::LendingError,
+    health::{self, Health},
+};
 
 /// Collateral and debt of one account, per asset.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Position {
     collateral: HashMap<Asset, Amount>,
     debt: HashMap<Asset, Amount>,
@@ -31,6 +34,24 @@ impl Position {
             self.debt.insert(asset, remaining);
         }
         Ok(())
+    }
+
+    /// Adds debt without checking health: only `Protocol::borrow`, which checks it, calls this.
+    pub(super) fn add_debt(&mut self, asset: Asset, amount: Amount) -> Result<(), LendingError> {
+        if amount == Amount::new(0) {
+            return Ok(());
+        }
+        let balance = self.debt.entry(asset).or_insert(Amount::new(0));
+        *balance = balance.checked_add(amount).ok_or(LendingError::Overflow)?;
+        Ok(())
+    }
+
+    pub fn health(
+        &self,
+        feed: &dyn PriceFeed,
+        liquidation_threshold: Bps,
+    ) -> Result<Health, LendingError> {
+        health::evaluate(&self.collateral, &self.debt, feed, liquidation_threshold)
     }
 }
 
