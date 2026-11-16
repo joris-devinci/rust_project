@@ -6,4 +6,4 @@ mod money;
 pub use asset::Asset;
 pub use error::OracleError;
 pub use feed::{PriceFeed, StaticFeed};
-pub use money::{Amount, Price, UsdValue};
+pub use money::{Amount, Bps, Price, UsdValue};
