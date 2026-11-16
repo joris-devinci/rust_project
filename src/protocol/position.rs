@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde::Serialize;
+
 use crate::domain::{Amount, Asset, Bps, PriceFeed};
 
 use super::{
@@ -8,7 +10,7 @@ use super::{
 };
 
 /// Collateral and debt of one account, per asset.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct Position {
     collateral: HashMap<Asset, Amount>,
     debt: HashMap<Asset, Amount>,
