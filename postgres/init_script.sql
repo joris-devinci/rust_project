@@ -1,5 +1,7 @@
-CREATE TABLE public.scraped_data (
-    "ticker" varchar(255),
-    exchange varchar(255),
-    price float,
+CREATE TABLE public.ticker (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    asset TEXT NOT NULL,
+    venue TEXT NOT NULL,
+    price NUMERIC NOT NULL,
+    "date" TIMESTAMPTZ NOT NULL
 );

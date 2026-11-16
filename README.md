@@ -8,3 +8,6 @@ Get in the Database:
 
 Stop Database:
 - docker compose down (At a '-v' at the end to delete the database contents)
+
+Producer 3.34 sec
+Consumer 50-60 sec
