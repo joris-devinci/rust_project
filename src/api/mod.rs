@@ -1,4 +1,5 @@
 mod error;
+mod keeper;
 mod routes;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -7,6 +8,7 @@ use crate::{domain::PriceFeed, protocol::Protocol};
 
 use error::ApiError;
 
+pub use keeper::run_keeper;
 pub use routes::router;
 
 /// Shared by every request: the protocol behind a lock, and the price source.

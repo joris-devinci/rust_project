@@ -1,16 +1,17 @@
 //! Demo of the lending API with fixed prices, until the oracle is wired in.
 //! Run it with `cargo run --example api`.
 
-use std::{error::Error, sync::Arc};
+use std::{error::Error, sync::Arc, time::Duration};
 
 use rust_project::{
-    api::{AppState, router},
+    api::{AppState, router, run_keeper},
     domain::{Asset, Bps, Price, StaticFeed},
     protocol::Protocol,
 };
 use tokio::{net::TcpListener, runtime::Runtime};
 
 const ADDRESS: &str = "127.0.0.1:3000";
+const KEEPER_PERIOD: Duration = Duration::from_secs(5);
 
 fn main() -> Result<(), Box<dyn Error>> {
     let feed = StaticFeed::new([
@@ -26,6 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn serve(state: AppState) -> std::io::Result<()> {
+    tokio::spawn(run_keeper(state.clone(), KEEPER_PERIOD));
     let listener = TcpListener::bind(ADDRESS).await?;
     println!("lending API listening on http://{ADDRESS}");
     axum::serve(listener, router(state)).await

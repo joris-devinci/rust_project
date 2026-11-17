@@ -14,6 +14,8 @@ pub enum LendingError {
     UnknownAccount(AccountId),
     #[error("borrow would make the position liquidatable")]
     WouldBeUnhealthy,
+    #[error("account {0:?} is healthy and cannot be liquidated")]
+    NotLiquidatable(AccountId),
     #[error(transparent)]
     Oracle(#[from] OracleError),
 }
