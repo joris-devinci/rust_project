@@ -53,8 +53,10 @@ async fn account(
     State(state): State<AppState>,
     Path(id): Path<AccountId>,
 ) -> Result<Json<AccountView>, ApiError> {
+    state.read()?.position(id)?;
+    let feed = state.get_current_prices().await?;
     let protocol = state.read()?;
-    let health = protocol.health(id, state.feed.as_ref())?;
+    let health = protocol.health(id, feed.as_ref())?;
     let position = protocol.position(id)?.clone();
     Ok(Json(AccountView {
         id,
@@ -79,9 +81,11 @@ async fn borrow(
     Path(id): Path<AccountId>,
     Json(movement): Json<Movement>,
 ) -> Result<StatusCode, ApiError> {
+    state.read()?.position(id)?;
+    let feed = state.get_current_prices().await?;
     state
         .write()?
-        .borrow(id, movement.asset, movement.amount, state.feed.as_ref())?;
+        .borrow(id, movement.asset, movement.amount, feed.as_ref())?;
     Ok(StatusCode::NO_CONTENT)
 }
 

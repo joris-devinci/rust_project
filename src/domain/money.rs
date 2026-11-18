@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn usdc_at_one_dollar_keeps_its_amount() {
+    fn one_dollar_price_keeps_the_amount_value() {
         let amount = Amount::new(1_500_000_000); // 1,500 USDC
         let price = Price::new(100_000_000); // $1
         assert_eq!(amount.to_usd(price), Some(UsdValue(1_500_000_000)));

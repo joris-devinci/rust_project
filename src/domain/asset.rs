@@ -5,5 +5,4 @@ pub enum Asset {
     Eth,
     Btc,
     Solana,
-    Usdc,
 }

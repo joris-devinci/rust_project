@@ -3,24 +3,79 @@ mod routes;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::{domain::PriceFeed, protocol::Protocol};
+use sqlx::{PgPool, Row};
+
+use crate::{
+    domain::{Asset, Price, PriceFeed, StaticFeed},
+    protocol::Protocol,
+};
 
 use error::ApiError;
 
 pub use routes::router;
 
-/// Shared by every request: the protocol behind a lock, and the price source.
+#[derive(Clone)]
+enum PriceSource {
+    Static(Arc<dyn PriceFeed>),
+    Database(PgPool),
+}
+
+/// Shared by every request: the protocol behind a lock, and its price source.
 #[derive(Clone)]
 pub struct AppState {
     protocol: Arc<RwLock<Protocol>>,
-    feed: Arc<dyn PriceFeed>,
+    prices: PriceSource,
 }
 
 impl AppState {
+    /// Creates a state with a fixed feed, primarily for tests.
     pub fn new(protocol: Protocol, feed: Arc<dyn PriceFeed>) -> Self {
         Self {
             protocol: Arc::new(RwLock::new(protocol)),
-            feed,
+            prices: PriceSource::Static(feed),
+        }
+    }
+
+    /// Creates a state that loads the latest ticker prices from PostgreSQL.
+    pub fn with_database(protocol: Protocol, pool: PgPool) -> Self {
+        Self {
+            protocol: Arc::new(RwLock::new(protocol)),
+            prices: PriceSource::Database(pool),
+        }
+    }
+
+    /// Loads the latest stored price for each asset, or returns the configured static feed.
+    pub(super) async fn get_current_prices(&self) -> Result<Arc<dyn PriceFeed>, ApiError> {
+        match &self.prices {
+            PriceSource::Static(feed) => Ok(Arc::clone(feed)),
+            PriceSource::Database(pool) => {
+                let rows = sqlx::query(
+                    r#"
+                    SELECT DISTINCT ON (asset) asset, price::text AS price
+                    FROM ticker
+                    ORDER BY asset, "date" DESC, id DESC
+                    "#,
+                )
+                .fetch_all(pool)
+                .await?;
+
+                let prices = rows
+                    .into_iter()
+                    .map(|row| {
+                        let asset_name: String = row.try_get("asset")?;
+                        let price_text: String = row.try_get("price")?;
+                        let asset = parse_asset(&asset_name)?;
+                        let price = parse_price(&price_text).ok_or_else(|| {
+                            ApiError::InvalidPriceData(format!(
+                                "invalid price for {asset_name}: {price_text}"
+                            ))
+                        })?;
+                        Ok((asset, price))
+                    })
+                    .collect::<Result<Vec<_>, ApiError>>()?;
+
+                Ok(Arc::new(StaticFeed::new(prices)))
+            }
         }
     }
 
@@ -30,5 +85,61 @@ impl AppState {
 
     fn write(&self) -> Result<RwLockWriteGuard<'_, Protocol>, ApiError> {
         self.protocol.write().map_err(|_| ApiError::LockPoisoned)
+    }
+}
+
+fn parse_asset(value: &str) -> Result<Asset, ApiError> {
+    match value {
+        "BTC" => Ok(Asset::Btc),
+        "ETH" => Ok(Asset::Eth),
+        "SOL" => Ok(Asset::Solana),
+        _ => Err(ApiError::InvalidPriceData(format!(
+            "unsupported ticker asset: {value}"
+        ))),
+    }
+}
+
+fn parse_price(value: &str) -> Option<Price> {
+    const PRICE_SCALE: u128 = 100_000_000;
+
+    let (whole, fraction) = value.split_once('.').unwrap_or((value, ""));
+    if whole.is_empty()
+        || !whole.bytes().all(|byte| byte.is_ascii_digit())
+        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
+        || (fraction.len() > 8 && fraction[8..].bytes().any(|byte| byte != b'0'))
+    {
+        return None;
+    }
+
+    let whole = whole.parse::<u128>().ok()?;
+    let kept_fraction = &fraction[..fraction.len().min(8)];
+    let fractional_value = if kept_fraction.is_empty() {
+        0
+    } else {
+        kept_fraction.parse::<u128>().ok()?
+    };
+    let fractional_scale = 10_u128.checked_pow((8 - kept_fraction.len()) as u32)?;
+    let raw = whole
+        .checked_mul(PRICE_SCALE)?
+        .checked_add(fractional_value.checked_mul(fractional_scale)?)?;
+
+    (raw > 0).then_some(Price::new(raw))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_database_prices_to_eight_decimal_places() {
+        assert_eq!(parse_price("1234.5"), Some(Price::new(123_450_000_000)));
+        assert_eq!(parse_price("1.2345678900"), Some(Price::new(123_456_789)));
+    }
+
+    #[test]
+    fn rejects_prices_that_cannot_be_represented_safely() {
+        assert_eq!(parse_price("0"), None);
+        assert_eq!(parse_price("1.234567891"), None);
+        assert_eq!(parse_price("not-a-price"), None);
     }
 }

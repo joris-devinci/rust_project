@@ -31,7 +31,7 @@ struct AccountView {
 async fn spawn_api() -> String {
     let feed = StaticFeed::new([
         (Asset::Eth, Price::new(200_000_000_000)),
-        (Asset::Usdc, Price::new(100_000_000)),
+        (Asset::Btc, Price::new(5_000_000_000_000)),
     ]);
     let protocol = Protocol::new(Bps::new(8_000).expect("80% is a valid ratio"));
     let app = router(AppState::new(protocol, Arc::new(feed)));
@@ -93,33 +93,15 @@ fn deposit_borrow_and_repay_over_http() {
         assert_eq!(deposited, StatusCode::NO_CONTENT);
         assert_eq!(health(&client, &account).await, Health::NoDebt);
 
-        let too_much = post(
-            &client,
-            format!("{account}/borrow"),
-            Asset::Usdc,
-            2_400_000_001,
-        )
-        .await;
+        let too_much = post(&client, format!("{account}/borrow"), Asset::Btc, 48_001).await;
         assert_eq!(too_much, StatusCode::UNPROCESSABLE_ENTITY);
         assert_eq!(health(&client, &account).await, Health::NoDebt);
 
-        let borrowed = post(
-            &client,
-            format!("{account}/borrow"),
-            Asset::Usdc,
-            1_500_000_000,
-        )
-        .await;
+        let borrowed = post(&client, format!("{account}/borrow"), Asset::Btc, 30_000).await;
         assert_eq!(borrowed, StatusCode::NO_CONTENT);
         assert_eq!(health(&client, &account).await, Health::Safe);
 
-        let repaid = post(
-            &client,
-            format!("{account}/repay"),
-            Asset::Usdc,
-            1_500_000_000,
-        )
-        .await;
+        let repaid = post(&client, format!("{account}/repay"), Asset::Btc, 30_000).await;
         assert_eq!(repaid, StatusCode::NO_CONTENT);
         assert_eq!(health(&client, &account).await, Health::NoDebt);
     });

@@ -23,7 +23,7 @@ pub async fn producer(
     let (asset, venue, url) = ENDPOINTS.get(&tid).expect("Unknown endpoint");
     
     let request_interval = Duration::from_secs_f64(f64::from(producer_count) / REQUESTS_PER_SECOND_LIMIT);
-    
+
     let client = reqwest::Client::builder()
         .user_agent(concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")))
         .build()?;

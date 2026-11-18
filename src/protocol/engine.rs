@@ -94,8 +94,8 @@ mod tests {
 
     fn feed() -> StaticFeed {
         StaticFeed::new([
-            (Asset::Eth, Price::new(200_000_000_000)), // $2,000
-            (Asset::Usdc, Price::new(100_000_000)),    // $1
+            (Asset::Eth, Price::new(200_000_000_000)),   // $2,000
+            (Asset::Btc, Price::new(5_000_000_000_000)), // $50,000
         ])
     }
 
@@ -117,7 +117,7 @@ mod tests {
     #[test]
     fn borrow_within_limit_succeeds() -> Result<(), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        protocol.borrow(id, Asset::Usdc, Amount::new(1_500_000_000), &feed())?;
+        protocol.borrow(id, Asset::Btc, Amount::new(30_000), &feed())?;
         assert_eq!(protocol.health(id, &feed())?, Health::Safe);
         Ok(())
     }
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn borrow_up_to_the_exact_limit_succeeds() -> Result<(), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        protocol.borrow(id, Asset::Usdc, Amount::new(2_400_000_000), &feed())?;
+        protocol.borrow(id, Asset::Btc, Amount::new(48_000), &feed())?;
         assert_eq!(protocol.health(id, &feed())?, Health::Safe);
         Ok(())
     }
@@ -133,7 +133,7 @@ mod tests {
     #[test]
     fn borrow_beyond_limit_is_rejected_and_changes_nothing() -> Result<(), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        let result = protocol.borrow(id, Asset::Usdc, Amount::new(2_400_000_001), &feed());
+        let result = protocol.borrow(id, Asset::Btc, Amount::new(48_001), &feed());
         assert!(matches!(result, Err(LendingError::WouldBeUnhealthy)));
         assert_eq!(protocol.health(id, &feed())?, Health::NoDebt);
         Ok(())
