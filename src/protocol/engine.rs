@@ -80,6 +80,35 @@ impl Protocol {
         Ok(())
     }
 
+    /// Accounts whose position is liquidatable at the current prices.
+    pub fn liquidatable_accounts(
+        &self,
+        feed: &dyn PriceFeed,
+    ) -> Result<Vec<AccountId>, LendingError> {
+        let mut accounts = Vec::new();
+        for (&id, position) in &self.positions {
+            if position.health(feed, self.liquidation_threshold)? == Health::Liquidatable {
+                accounts.push(id);
+            }
+        }
+        Ok(accounts)
+    }
+
+    /// Closes a liquidatable position: its debt is cancelled and its collateral is seized.
+    /// Returns the seized position, and leaves the account open with nothing in it.
+    pub fn liquidate(
+        &mut self,
+        id: AccountId,
+        feed: &dyn PriceFeed,
+    ) -> Result<Position, LendingError> {
+        let liquidation_threshold = self.liquidation_threshold;
+        let position = self.position_mut(id)?;
+        if position.health(feed, liquidation_threshold)? != Health::Liquidatable {
+            return Err(LendingError::NotLiquidatable(id));
+        }
+        Ok(std::mem::take(position))
+    }
+
     fn position_mut(&mut self, id: AccountId) -> Result<&mut Position, LendingError> {
         self.positions
             .get_mut(&id)
@@ -136,6 +165,53 @@ mod tests {
         let result = protocol.borrow(id, Asset::Btc, Amount::new(48_001), &feed());
         assert!(matches!(result, Err(LendingError::WouldBeUnhealthy)));
         assert_eq!(protocol.health(id, &feed())?, Health::NoDebt);
+        Ok(())
+    }
+
+    // ETH crashes from $2,000 to $1,200: 1.5 ETH now backs only $1,440 of debt
+    fn crashed_feed() -> StaticFeed {
+        StaticFeed::new([
+            (Asset::Eth, Price::new(120_000_000_000)),
+            (Asset::Btc, Price::new(5_000_000_000_000)),
+        ])
+    }
+
+    // Account with 1.5 ETH of collateral and 0.03 BTC ($1,500) of debt, safe at $2,000
+    fn protocol_with_loan() -> Result<(Protocol, AccountId), LendingError> {
+        let (mut protocol, id) = protocol_with_eth()?;
+        protocol.borrow(id, Asset::Btc, Amount::new(30_000), &feed())?;
+        Ok((protocol, id))
+    }
+
+    #[test]
+    fn only_unhealthy_accounts_are_listed() -> Result<(), LendingError> {
+        let (mut protocol, borrower) = protocol_with_loan()?;
+        let depositor = protocol.open_account()?;
+        protocol.deposit(depositor, Asset::Eth, Amount::new(1_000_000))?;
+        assert!(protocol.liquidatable_accounts(&feed())?.is_empty());
+        assert_eq!(
+            protocol.liquidatable_accounts(&crashed_feed())?,
+            vec![borrower]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn healthy_account_cannot_be_liquidated() -> Result<(), LendingError> {
+        let (mut protocol, id) = protocol_with_loan()?;
+        let result = protocol.liquidate(id, &feed());
+        assert!(matches!(result, Err(LendingError::NotLiquidatable(_))));
+        assert_eq!(protocol.health(id, &feed())?, Health::Safe);
+        Ok(())
+    }
+
+    #[test]
+    fn liquidation_seizes_collateral_and_clears_debt() -> Result<(), LendingError> {
+        let (mut protocol, id) = protocol_with_loan()?;
+        let before = protocol.position(id)?.clone();
+        let seized = protocol.liquidate(id, &crashed_feed())?;
+        assert_eq!(seized, before);
+        assert_eq!(protocol.position(id)?, &Position::default());
         Ok(())
     }
 

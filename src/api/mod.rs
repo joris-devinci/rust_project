@@ -1,4 +1,5 @@
 mod error;
+mod keeper;
 mod routes;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -7,11 +8,13 @@ use sqlx::{PgPool, Row};
 
 use crate::{
     domain::{Asset, Price, PriceFeed, StaticFeed},
+    oracle::median_by_asset,
     protocol::Protocol,
 };
 
 use error::ApiError;
 
+pub use keeper::run_keeper;
 pub use routes::router;
 
 #[derive(Clone)]
@@ -36,7 +39,7 @@ impl AppState {
         }
     }
 
-    /// Creates a state that loads the latest ticker prices from PostgreSQL.
+    /// Creates a state that prices assets from the scraper's tickers in PostgreSQL.
     pub fn with_database(protocol: Protocol, pool: PgPool) -> Self {
         Self {
             protocol: Arc::new(RwLock::new(protocol)),
@@ -44,16 +47,18 @@ impl AppState {
         }
     }
 
-    /// Loads the latest stored price for each asset, or returns the configured static feed.
+    /// Takes the latest price of each venue for each asset, then the median across venues,
+    /// or returns the configured static feed. A venue silent for 30 seconds no longer counts.
     pub(super) async fn get_current_prices(&self) -> Result<Arc<dyn PriceFeed>, ApiError> {
         match &self.prices {
             PriceSource::Static(feed) => Ok(Arc::clone(feed)),
             PriceSource::Database(pool) => {
                 let rows = sqlx::query(
                     r#"
-                    SELECT DISTINCT ON (asset) asset, price::text AS price
+                    SELECT DISTINCT ON (asset, venue) asset, price::text AS price
                     FROM ticker
-                    ORDER BY asset, "date" DESC, id DESC
+                    WHERE "date" > now() - interval '30 seconds'
+                    ORDER BY asset, venue, "date" DESC, id DESC
                     "#,
                 )
                 .fetch_all(pool)
@@ -74,7 +79,7 @@ impl AppState {
                     })
                     .collect::<Result<Vec<_>, ApiError>>()?;
 
-                Ok(Arc::new(StaticFeed::new(prices)))
+                Ok(Arc::new(StaticFeed::new(median_by_asset(prices))))
             }
         }
     }

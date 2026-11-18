@@ -24,6 +24,11 @@ impl Price {
         Self(raw)
     }
 
+    /// Average of two prices, rounding down, without overflow.
+    pub fn midpoint(self, other: Self) -> Self {
+        Self(self.0.midpoint(other.0))
+    }
+
     pub fn to_decimal_string(self) -> String {
         format!(
             "{}.{:08}",
@@ -124,6 +129,15 @@ mod tests {
         assert_eq!(
             UsdValue(3_000_000_000).apply(ratio),
             Some(UsdValue(2_400_000_000))
+        );
+    }
+
+    #[test]
+    fn midpoint_rounds_down() {
+        assert_eq!(Price::new(3).midpoint(Price::new(6)), Price::new(4));
+        assert_eq!(
+            Price::new(u128::MAX).midpoint(Price::new(u128::MAX)),
+            Price::new(u128::MAX)
         );
     }
 

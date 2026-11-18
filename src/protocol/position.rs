@@ -10,7 +10,7 @@ use super::{
 };
 
 /// Collateral and debt of one account, per asset.
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize)]
 pub struct Position {
     collateral: HashMap<Asset, Amount>,
     debt: HashMap<Asset, Amount>,

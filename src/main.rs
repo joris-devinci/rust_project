@@ -24,6 +24,10 @@ fn main() {
             .await
             .expect("could not connect API to PostgreSQL");
         let state = AppState::with_database(Protocol::new(threshold), pool);
+        tokio::spawn(rust_project::api::run_keeper(
+            state.clone(),
+            std::time::Duration::from_secs(5),
+        ));
 
         let listener = TcpListener::bind("127.0.0.1:3000")
             .await
