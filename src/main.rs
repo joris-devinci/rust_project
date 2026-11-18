@@ -1,9 +1,9 @@
-mod models;
 mod threads;
 
 use rust_project::{
     api::{AppState, router},
     domain::Bps,
+    models,
     protocol::Protocol,
 };
 use sqlx::postgres::PgPoolOptions;

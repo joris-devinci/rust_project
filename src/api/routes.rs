@@ -7,7 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{Amount, Asset, OracleError, PriceFeed},
+    domain::{Amount, Asset, OracleError},
     protocol::{AccountId, Health, Position},
 };
 

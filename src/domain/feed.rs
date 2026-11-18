@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use super::{asset::Asset, error::OracleError, money::Price};
+use crate::models::Asset;
+
+use super::{error::OracleError, money::Price};
 
 pub trait PriceFeed: Send + Sync {
     fn price(&self, asset: Asset) -> Result<Price, OracleError>;
