@@ -25,6 +25,13 @@ struct OpenedAccount {
 #[derive(Deserialize)]
 struct AccountView {
     health: Health,
+    prices: Vec<AssetPriceView>,
+}
+
+#[derive(Debug, Deserialize, PartialEq)]
+struct AssetPriceView {
+    asset: Asset,
+    price_usd: String,
 }
 
 /// Starts the API on a free local port, with ETH at $2,000 and an 80% threshold.
@@ -69,6 +76,10 @@ async fn post(client: &Client, url: String, asset: Asset, raw_amount: u128) -> S
 }
 
 async fn health(client: &Client, account_url: &str) -> Health {
+    account_view(client, account_url).await.health
+}
+
+async fn account_view(client: &Client, account_url: &str) -> AccountView {
     let view: AccountView = client
         .get(account_url)
         .send()
@@ -77,7 +88,7 @@ async fn health(client: &Client, account_url: &str) -> Health {
         .json()
         .await
         .expect("body is an account view");
-    view.health
+    view
 }
 
 #[test]
@@ -91,7 +102,21 @@ fn deposit_borrow_and_repay_over_http() {
         // 1.5 ETH at $2,000 x 80% gives $2,400 of borrowing power
         let deposited = post(&client, format!("{account}/deposit"), Asset::Eth, 1_500_000).await;
         assert_eq!(deposited, StatusCode::NO_CONTENT);
-        assert_eq!(health(&client, &account).await, Health::NoDebt);
+        let view = account_view(&client, &account).await;
+        assert_eq!(view.health, Health::NoDebt);
+        assert_eq!(
+            view.prices,
+            vec![
+                AssetPriceView {
+                    asset: Asset::Btc,
+                    price_usd: "50000.00000000".to_owned(),
+                },
+                AssetPriceView {
+                    asset: Asset::Eth,
+                    price_usd: "2000.00000000".to_owned(),
+                },
+            ]
+        );
 
         let too_much = post(&client, format!("{account}/borrow"), Asset::Btc, 48_001).await;
         assert_eq!(too_much, StatusCode::UNPROCESSABLE_ENTITY);

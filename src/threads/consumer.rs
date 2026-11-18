@@ -22,7 +22,7 @@ pub async fn consumer() -> Result<(), Box<dyn std::error::Error + Send + Sync>> 
             continue;
         };
 
-        println!("Queue len = {}", queue.lock().unwrap().len());
+        // println!("Queue len = {}", queue.lock().unwrap().len());
 
         sqlx::query(
             "INSERT INTO ticker (asset, venue, price, date)

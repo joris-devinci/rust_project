@@ -43,7 +43,7 @@ pub async fn producer(
 
         queue.lock().unwrap().push(ticker);
 
-        println!("TID {} added a ticker", tid);
+        // println!("TID {} added a ticker", tid);
 
         let end_time = tokio::time::Instant::now();
         let elapsed = end_time.duration_since(start_time);

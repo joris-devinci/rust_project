@@ -23,6 +23,14 @@ impl Price {
     pub const fn new(raw: u128) -> Self {
         Self(raw)
     }
+
+    pub fn to_decimal_string(self) -> String {
+        format!(
+            "{}.{:08}",
+            self.0 / PRICE_SCALE,
+            self.0 % PRICE_SCALE
+        )
+    }
 }
 
 impl Amount {

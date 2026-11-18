@@ -7,7 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{Amount, Asset},
+    domain::{Amount, Asset, OracleError, PriceFeed},
     protocol::{AccountId, Health, Position},
 };
 
@@ -33,6 +33,13 @@ struct AccountView {
     id: AccountId,
     health: Health,
     position: Position,
+    prices: Vec<AssetPriceView>,
+}
+
+#[derive(Serialize)]
+struct AssetPriceView {
+    asset: Asset,
+    price_usd: String,
 }
 
 /// Body of deposit, borrow and repay.
@@ -58,10 +65,21 @@ async fn account(
     let protocol = state.read()?;
     let health = protocol.health(id, feed.as_ref())?;
     let position = protocol.position(id)?.clone();
+    let prices = [Asset::Btc, Asset::Eth, Asset::Solana]
+        .into_iter()
+        .filter_map(|asset| match feed.price(asset) {
+            Ok(price) => Some(AssetPriceView {
+                asset,
+                price_usd: price.to_decimal_string(),
+            }),
+            Err(OracleError::NoPrice(_)) => None,
+        })
+        .collect();
     Ok(Json(AccountView {
         id,
         health,
         position,
+        prices,
     }))
 }
 
