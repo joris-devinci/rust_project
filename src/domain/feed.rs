@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use super::{asset::Asset, error::OracleError, money::Price};
+use crate::models::Asset;
+
+use super::{error::OracleError, money::Price};
 
 pub trait PriceFeed: Send + Sync {
     fn price(&self, asset: Asset) -> Result<Price, OracleError>;
@@ -34,13 +36,16 @@ mod tests {
 
     #[test]
     fn static_feed_returns_configured_price() {
-        let feed = StaticFeed::new([(Asset::Usdc, Price::new(100_000_000))]);
-        assert_eq!(feed.price(Asset::Usdc).ok(), Some(Price::new(100_000_000)));
+        let feed = StaticFeed::new([(Asset::Eth, Price::new(200_000_000_000))]);
+        assert_eq!(
+            feed.price(Asset::Eth).ok(),
+            Some(Price::new(200_000_000_000))
+        );
     }
 
     #[test]
     fn static_feed_rejects_unknown_asset() {
-        let feed = StaticFeed::new([(Asset::Usdc, Price::new(100_000_000))]);
+        let feed = StaticFeed::new([(Asset::Btc, Price::new(5_000_000_000_000))]);
         assert!(matches!(
             feed.price(Asset::Eth),
             Err(OracleError::NoPrice(Asset::Eth))

@@ -91,12 +91,10 @@ mod tests {
     #[test]
     fn partial_repay_reduces_debt() -> Result<(), LendingError> {
         let mut position = Position::default();
-        position
-            .debt
-            .insert(Asset::Usdc, Amount::new(1_500_000_000));
-        position.repay(Asset::Usdc, Amount::new(500_000_000))?;
+        position.debt.insert(Asset::Btc, Amount::new(1_500_000_000));
+        position.repay(Asset::Btc, Amount::new(500_000_000))?;
         assert_eq!(
-            position.debt.get(&Asset::Usdc),
+            position.debt.get(&Asset::Btc),
             Some(&Amount::new(1_000_000_000))
         );
         Ok(())
@@ -105,10 +103,8 @@ mod tests {
     #[test]
     fn full_repay_clears_debt() -> Result<(), LendingError> {
         let mut position = Position::default();
-        position
-            .debt
-            .insert(Asset::Usdc, Amount::new(1_500_000_000));
-        position.repay(Asset::Usdc, Amount::new(1_500_000_000))?;
+        position.debt.insert(Asset::Btc, Amount::new(1_500_000_000));
+        position.repay(Asset::Btc, Amount::new(1_500_000_000))?;
         assert!(position.debt.is_empty());
         Ok(())
     }
@@ -116,13 +112,13 @@ mod tests {
     #[test]
     fn repay_more_than_debt_is_rejected() {
         let mut position = Position::default();
-        position.debt.insert(Asset::Usdc, Amount::new(100_000_000));
+        position.debt.insert(Asset::Btc, Amount::new(100_000_000));
         assert!(matches!(
-            position.repay(Asset::Usdc, Amount::new(150_000_000)),
-            Err(LendingError::RepayExceedsDebt(Asset::Usdc))
+            position.repay(Asset::Btc, Amount::new(150_000_000)),
+            Err(LendingError::RepayExceedsDebt(Asset::Btc))
         ));
         assert_eq!(
-            position.debt.get(&Asset::Usdc),
+            position.debt.get(&Asset::Btc),
             Some(&Amount::new(100_000_000))
         );
     }

@@ -7,7 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{Amount, Asset, Price},
+    domain::{Amount, Asset, OracleError, Price},
     protocol::{AccountId, Health, Position},
 };
 
@@ -34,6 +34,13 @@ struct AccountView {
     id: AccountId,
     health: Health,
     position: Position,
+    prices: Vec<AssetPriceView>,
+}
+
+#[derive(Serialize)]
+struct AssetPriceView {
+    asset: Asset,
+    price_usd: String,
 }
 
 /// Body of deposit, borrow and repay.
@@ -50,15 +57,16 @@ struct AssetPrice {
     price: Option<Price>,
 }
 
-async fn prices(State(state): State<AppState>) -> Json<Vec<AssetPrice>> {
-    let prices = Asset::ALL
+async fn prices(State(state): State<AppState>) -> Result<Json<Vec<AssetPrice>>, ApiError> {
+    let feed = state.get_current_prices().await?;
+    let prices = [Asset::Eth, Asset::Btc, Asset::Solana]
         .into_iter()
         .map(|asset| AssetPrice {
             asset,
-            price: state.feed.price(asset).ok(),
+            price: feed.price(asset).ok(),
         })
         .collect();
-    Json(prices)
+    Ok(Json(prices))
 }
 
 async fn open_account(
@@ -72,13 +80,26 @@ async fn account(
     State(state): State<AppState>,
     Path(id): Path<AccountId>,
 ) -> Result<Json<AccountView>, ApiError> {
+    state.read()?.position(id)?;
+    let feed = state.get_current_prices().await?;
     let protocol = state.read()?;
-    let health = protocol.health(id, state.feed.as_ref())?;
+    let health = protocol.health(id, feed.as_ref())?;
     let position = protocol.position(id)?.clone();
+    let prices = [Asset::Btc, Asset::Eth, Asset::Solana]
+        .into_iter()
+        .filter_map(|asset| match feed.price(asset) {
+            Ok(price) => Some(AssetPriceView {
+                asset,
+                price_usd: price.to_decimal_string(),
+            }),
+            Err(OracleError::NoPrice(_)) => None,
+        })
+        .collect();
     Ok(Json(AccountView {
         id,
         health,
         position,
+        prices,
     }))
 }
 
@@ -98,9 +119,11 @@ async fn borrow(
     Path(id): Path<AccountId>,
     Json(movement): Json<Movement>,
 ) -> Result<StatusCode, ApiError> {
+    state.read()?.position(id)?;
+    let feed = state.get_current_prices().await?;
     state
         .write()?
-        .borrow(id, movement.asset, movement.amount, state.feed.as_ref())?;
+        .borrow(id, movement.asset, movement.amount, feed.as_ref())?;
     Ok(StatusCode::NO_CONTENT)
 }
 

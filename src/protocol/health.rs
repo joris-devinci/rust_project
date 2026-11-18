@@ -57,25 +57,14 @@ mod tests {
         let feed = StaticFeed::new([
             (Asset::Eth, Price::new(200_000_000_000)),   // $2,000
             (Asset::Btc, Price::new(5_000_000_000_000)), // $50,000
-            (Asset::Usdc, Price::new(100_000_000)),
         ]);
         // 1 ETH + 0.1 BTC = $7,000, x 80% = $5,600 of borrowing power
         let collateral = HashMap::from([
             (Asset::Eth, Amount::new(1_000_000)),
             (Asset::Btc, Amount::new(100_000)),
         ]);
-        let at_limit = evaluate(
-            &collateral,
-            &usdc_debt(5_600_000_000),
-            &feed,
-            eighty_percent(),
-        )?;
-        let above = evaluate(
-            &collateral,
-            &usdc_debt(5_600_000_001),
-            &feed,
-            eighty_percent(),
-        )?;
+        let at_limit = evaluate(&collateral, &btc_debt(112_000), &feed, eighty_percent())?;
+        let above = evaluate(&collateral, &btc_debt(112_001), &feed, eighty_percent())?;
         assert_eq!(at_limit, Health::Safe);
         assert_eq!(above, Health::Liquidatable);
         Ok(())
@@ -93,7 +82,7 @@ mod tests {
     fn feed(eth_price: u128) -> StaticFeed {
         StaticFeed::new([
             (Asset::Eth, Price::new(eth_price)),
-            (Asset::Usdc, Price::new(100_000_000)),
+            (Asset::Btc, Price::new(5_000_000_000_000)),
         ])
     }
 
@@ -106,8 +95,8 @@ mod tests {
         HashMap::from([(Asset::Eth, Amount::new(1_500_000))])
     }
 
-    fn usdc_debt(raw: u128) -> HashMap<Asset, Amount> {
-        HashMap::from([(Asset::Usdc, Amount::new(raw))])
+    fn btc_debt(raw: u128) -> HashMap<Asset, Amount> {
+        HashMap::from([(Asset::Btc, Amount::new(raw))])
     }
 
     #[test]
@@ -118,11 +107,11 @@ mod tests {
     }
 
     #[test]
-    fn eth_at_2000_covers_1500_usdc() -> Result<(), LendingError> {
-        // borrowing power: $3,000 x 80% = $2,400 >= $1,500
+    fn eth_at_2000_covers_1500_dollars_of_btc_debt() -> Result<(), LendingError> {
+        // 0.03 BTC is $1,500; borrowing power is $3,000 x 80% = $2,400.
         let health = evaluate(
             &collateral(),
-            &usdc_debt(1_500_000_000),
+            &btc_debt(30_000),
             &feed(200_000_000_000),
             eighty_percent(),
         )?;
@@ -132,10 +121,10 @@ mod tests {
 
     #[test]
     fn eth_crash_to_1200_makes_it_liquidatable() -> Result<(), LendingError> {
-        // borrowing power: $1,800 x 80% = $1,440 < $1,500
+        // borrowing power: $1,800 x 80% = $1,440 < $1,500 of BTC debt.
         let health = evaluate(
             &collateral(),
-            &usdc_debt(1_500_000_000),
+            &btc_debt(30_000),
             &feed(120_000_000_000),
             eighty_percent(),
         )?;
@@ -147,7 +136,7 @@ mod tests {
     fn debt_equal_to_borrowing_power_is_still_safe() -> Result<(), LendingError> {
         let health = evaluate(
             &collateral(),
-            &usdc_debt(2_400_000_000),
+            &btc_debt(48_000),
             &feed(200_000_000_000),
             eighty_percent(),
         )?;
@@ -157,11 +146,11 @@ mod tests {
 
     #[test]
     fn missing_price_is_an_oracle_error() {
-        let usdc_only = StaticFeed::new([(Asset::Usdc, Price::new(100_000_000))]);
+        let btc_only = StaticFeed::new([(Asset::Btc, Price::new(5_000_000_000_000))]);
         let result = evaluate(
             &collateral(),
-            &usdc_debt(1_500_000_000),
-            &usdc_only,
+            &btc_debt(30_000),
+            &btc_only,
             eighty_percent(),
         );
         assert!(matches!(

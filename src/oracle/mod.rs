@@ -1,7 +1,5 @@
-mod feed;
-mod median;
-mod postgres;
+//! Aggregation of the prices quoted by the venues the scraper reads.
 
-pub use feed::OracleFeed;
-pub use median::median;
-pub use postgres::run_oracle;
+mod median;
+
+pub use median::{median, median_by_asset};

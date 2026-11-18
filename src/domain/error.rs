@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use super::asset::Asset;
+use crate::models::Asset;
 
 #[derive(Debug, Error)]
 pub enum OracleError {

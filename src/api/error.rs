@@ -12,6 +12,10 @@ use crate::protocol::LendingError;
 pub enum ApiError {
     #[error(transparent)]
     Lending(#[from] LendingError),
+    #[error("ticker price data is unavailable or invalid: {0}")]
+    InvalidPriceData(String),
+    #[error("ticker price database query failed: {0}")]
+    Database(#[from] sqlx::Error),
     #[error("protocol state is unavailable: a request panicked while holding its lock")]
     LockPoisoned,
 }
@@ -32,6 +36,7 @@ impl IntoResponse for ApiError {
             ) => StatusCode::UNPROCESSABLE_ENTITY,
             Self::Lending(LendingError::Overflow) => StatusCode::BAD_REQUEST,
             Self::Lending(LendingError::Oracle(_)) => StatusCode::SERVICE_UNAVAILABLE,
+            Self::InvalidPriceData(_) | Self::Database(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::LockPoisoned => StatusCode::INTERNAL_SERVER_ERROR,
         };
         let body = ErrorBody {
