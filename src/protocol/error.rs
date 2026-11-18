@@ -8,6 +8,8 @@ use super::engine::AccountId;
 pub enum LendingError {
     #[error("arithmetic overflow")]
     Overflow,
+    #[error("amount cannot be negative")]
+    NegativeAmount,
     #[error("repay exceeds the {0:?} debt")]
     RepayExceedsDebt(Asset),
     #[error("unknown account {0:?}")]

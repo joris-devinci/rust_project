@@ -3,7 +3,7 @@ mod error;
 mod health;
 mod position;
 
-pub use engine::{AccountId, Protocol};
+pub use engine::{AccountId, CollateralSummary, Protocol};
 pub use error::LendingError;
-pub use health::Health;
+pub use health::{Health, HealthReport};
 pub use position::Position;

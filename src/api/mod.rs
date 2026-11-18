@@ -4,6 +4,7 @@ mod routes;
 
 use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
+use rust_decimal::Decimal;
 use sqlx::{PgPool, Row};
 
 use crate::{
@@ -98,6 +99,7 @@ fn parse_asset(value: &str) -> Result<Asset, ApiError> {
         "BTC" => Ok(Asset::Btc),
         "ETH" => Ok(Asset::Eth),
         "SOL" => Ok(Asset::Solana),
+        "USD" => Ok(Asset::Usd),
         _ => Err(ApiError::InvalidPriceData(format!(
             "unsupported ticker asset: {value}"
         ))),
@@ -105,30 +107,8 @@ fn parse_asset(value: &str) -> Result<Asset, ApiError> {
 }
 
 fn parse_price(value: &str) -> Option<Price> {
-    const PRICE_SCALE: u128 = 100_000_000;
-
-    let (whole, fraction) = value.split_once('.').unwrap_or((value, ""));
-    if whole.is_empty()
-        || !whole.bytes().all(|byte| byte.is_ascii_digit())
-        || !fraction.bytes().all(|byte| byte.is_ascii_digit())
-        || (fraction.len() > 8 && fraction[8..].bytes().any(|byte| byte != b'0'))
-    {
-        return None;
-    }
-
-    let whole = whole.parse::<u128>().ok()?;
-    let kept_fraction = &fraction[..fraction.len().min(8)];
-    let fractional_value = if kept_fraction.is_empty() {
-        0
-    } else {
-        kept_fraction.parse::<u128>().ok()?
-    };
-    let fractional_scale = 10_u128.checked_pow((8 - kept_fraction.len()) as u32)?;
-    let raw = whole
-        .checked_mul(PRICE_SCALE)?
-        .checked_add(fractional_value.checked_mul(fractional_scale)?)?;
-
-    (raw > 0).then_some(Price::new(raw))
+    let value = value.parse::<Decimal>().ok()?;
+    (value > Decimal::ZERO).then_some(Price::new(value))
 }
 
 #[cfg(test)]
@@ -136,15 +116,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_database_prices_to_eight_decimal_places() {
-        assert_eq!(parse_price("1234.5"), Some(Price::new(123_450_000_000)));
-        assert_eq!(parse_price("1.2345678900"), Some(Price::new(123_456_789)));
+    fn parses_database_prices_without_rescaling() {
+        assert_eq!(
+            parse_price("1234.5"),
+            Some(Price::new(Decimal::new(12345, 1)))
+        );
+        assert_eq!(
+            parse_price("1.2345678900"),
+            Some(Price::new(Decimal::new(123456789, 8)))
+        );
     }
 
     #[test]
     fn rejects_prices_that_cannot_be_represented_safely() {
         assert_eq!(parse_price("0"), None);
-        assert_eq!(parse_price("1.234567891"), None);
+        assert_eq!(parse_price("-1"), None);
         assert_eq!(parse_price("not-a-price"), None);
     }
 }

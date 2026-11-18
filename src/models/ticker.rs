@@ -14,9 +14,13 @@ pub struct Ticker {
 }
 
 impl Ticker {
-    pub fn new(asset: Asset, venue: Venue, ticker_dto: TickerDTO) -> Result<Self, std::io::Error> {
+    pub fn new(
+        asset: Asset,
+        venue: Venue,
+        ticker_dto: TickerDTO,
+    ) -> Result<Self, rust_decimal::Error> {
         let date = Utc::now();
-        let price = Price(ticker_dto.price);
+        let price = Price(ticker_dto.price.parse()?);
         let volume = Volume(ticker_dto.volume);
 
         Ok(Self {

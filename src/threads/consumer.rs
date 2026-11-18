@@ -17,7 +17,7 @@ pub async fn consumer() -> Result<(), Box<dyn std::error::Error + Send + Sync>> 
         };
 
         let Some(ticker) = ticker else {
-            println!("There is no Ticker inside the option");
+            // println!("There is no Ticker inside the option");
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
             continue;
         };
@@ -26,7 +26,7 @@ pub async fn consumer() -> Result<(), Box<dyn std::error::Error + Send + Sync>> 
 
         sqlx::query(
             "INSERT INTO ticker (asset, venue, price, date)
-            VALUES ($1, $2, $3::numeric, $4)"
+            VALUES ($1, $2, $3, $4)",
         )
         .bind(ticker.asset.to_string())
         .bind(ticker.venue.to_string())

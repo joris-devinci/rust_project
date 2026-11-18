@@ -1,3 +1,5 @@
+//! HTTP endpoints for accounts. Amounts and displayed prices use ordinary decimal units.
+
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -8,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::{Amount, Asset, OracleError, Price},
-    protocol::{AccountId, Health, Position},
+    protocol::{AccountId, CollateralSummary, Health, Position},
 };
 
 use super::{AppState, error::ApiError};
@@ -29,12 +31,30 @@ struct OpenedAccount {
     id: AccountId,
 }
 
+/// Account snapshot; `prices` lists the current USD quote for each available asset.
 #[derive(Serialize)]
 struct AccountView {
     id: AccountId,
     health: Health,
+    borrow_utilization_percent: Option<String>,
     position: Position,
+    collateral: CollateralValueView,
     prices: Vec<AssetPriceView>,
+}
+
+#[derive(Serialize)]
+struct CollateralValueView {
+    total_value_usd: String,
+    borrowing_power_usd: String,
+}
+
+impl From<CollateralSummary> for CollateralValueView {
+    fn from(summary: CollateralSummary) -> Self {
+        Self {
+            total_value_usd: summary.total_value_usd.to_decimal_string(),
+            borrowing_power_usd: summary.borrowing_power_usd.to_decimal_string(),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -43,7 +63,7 @@ struct AssetPriceView {
     price_usd: String,
 }
 
-/// Body of deposit, borrow and repay.
+/// Request body for deposit, borrow, and repay; `amount` is a decimal asset quantity.
 #[derive(Deserialize)]
 struct Movement {
     asset: Asset,
@@ -59,7 +79,7 @@ struct AssetPrice {
 
 async fn prices(State(state): State<AppState>) -> Result<Json<Vec<AssetPrice>>, ApiError> {
     let feed = state.get_current_prices().await?;
-    let prices = [Asset::Eth, Asset::Btc, Asset::Solana]
+    let prices = [Asset::Eth, Asset::Btc, Asset::Solana, Asset::Usd]
         .into_iter()
         .map(|asset| AssetPrice {
             asset,
@@ -83,9 +103,14 @@ async fn account(
     state.read()?.position(id)?;
     let feed = state.get_current_prices().await?;
     let protocol = state.read()?;
-    let health = protocol.health(id, feed.as_ref())?;
+    let health_report = protocol.health_report(id, feed.as_ref())?;
+    let health = health_report.status;
+    let borrow_utilization_percent = health_report
+        .utilization_percent
+        .map(|percent| percent.round_dp(2).normalize().to_string());
+    let collateral = protocol.collateral_summary(id, feed.as_ref())?.into();
     let position = protocol.position(id)?.clone();
-    let prices = [Asset::Btc, Asset::Eth, Asset::Solana]
+    let prices = [Asset::Btc, Asset::Eth, Asset::Solana, Asset::Usd]
         .into_iter()
         .filter_map(|asset| match feed.price(asset) {
             Ok(price) => Some(AssetPriceView {
@@ -98,7 +123,9 @@ async fn account(
     Ok(Json(AccountView {
         id,
         health,
+        borrow_utilization_percent,
         position,
+        collateral,
         prices,
     }))
 }

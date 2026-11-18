@@ -1,8 +1,9 @@
 mod threads;
 
+use rust_decimal::Decimal;
 use rust_project::{
     api::{AppState, router},
-    domain::Bps,
+    domain::CollateralFactor,
     models,
     protocol::Protocol,
 };
@@ -17,13 +18,15 @@ fn main() {
 
     runtime.block_on(async {
         // API
-        let threshold = Bps::new(8_000).expect("80% is a valid ratio");
+        let collateral_factor =
+            CollateralFactor::new("0.8".parse::<Decimal>().expect("valid decimal"))
+                .expect("collateral factor must be between 0 and 1");
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)
             .await
             .expect("could not connect API to PostgreSQL");
-        let state = AppState::with_database(Protocol::new(threshold), pool);
+        let state = AppState::with_database(Protocol::new(collateral_factor), pool);
         tokio::spawn(rust_project::api::run_keeper(
             state.clone(),
             std::time::Duration::from_secs(5),

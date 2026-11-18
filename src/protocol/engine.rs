@@ -2,30 +2,46 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{Amount, Asset, Bps, PriceFeed};
+use crate::domain::{Amount, Asset, CollateralFactor, PriceFeed, UsdValue};
 
-use super::{error::LendingError, health::Health, position::Position};
+use super::{
+    error::LendingError,
+    health::{Health, HealthReport},
+    position::Position,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct AccountId(u64);
 
-/// Every account of the lending protocol, with the rules applied to them.
+/// In-memory account ledger and lending rules.
+///
+/// Collateral and debt are stored as decimal asset quantities; `collateral_factor` is
+/// the maximum fraction of collateral value that debt may use.
 #[derive(Debug)]
 pub struct Protocol {
     positions: HashMap<AccountId, Position>,
     next_id: u64,
-    liquidation_threshold: Bps,
+    collateral_factor: CollateralFactor,
+}
+
+/// Current collateral value and the amount that may be borrowed against it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CollateralSummary {
+    pub total_value_usd: UsdValue,
+    pub borrowing_power_usd: UsdValue,
 }
 
 impl Protocol {
-    pub fn new(liquidation_threshold: Bps) -> Self {
+    /// Creates a protocol with the fraction of collateral value allowed to back debt.
+    pub fn new(collateral_factor: CollateralFactor) -> Self {
         Self {
             positions: HashMap::new(),
             next_id: 0,
-            liquidation_threshold,
+            collateral_factor,
         }
     }
 
+    /// Opens an empty account and returns its identifier.
     pub fn open_account(&mut self) -> Result<AccountId, LendingError> {
         let id = AccountId(self.next_id);
         self.next_id = self.next_id.checked_add(1).ok_or(LendingError::Overflow)?;
@@ -39,10 +55,38 @@ impl Protocol {
             .ok_or(LendingError::UnknownAccount(id))
     }
 
+    /// Compares the account's USD debt with its price-weighted borrowing power.
     pub fn health(&self, id: AccountId, feed: &dyn PriceFeed) -> Result<Health, LendingError> {
-        self.position(id)?.health(feed, self.liquidation_threshold)
+        self.position(id)?.health(feed, self.collateral_factor)
     }
 
+    /// Returns the health status and debt utilization percentage for an account.
+    pub fn health_report(
+        &self,
+        id: AccountId,
+        feed: &dyn PriceFeed,
+    ) -> Result<HealthReport, LendingError> {
+        self.position(id)?
+            .health_report(feed, self.collateral_factor)
+    }
+
+    /// Values an account's collateral and applies the configured collateral factor.
+    pub fn collateral_summary(
+        &self,
+        id: AccountId,
+        feed: &dyn PriceFeed,
+    ) -> Result<CollateralSummary, LendingError> {
+        let total_value_usd = self.position(id)?.collateral_value(feed)?;
+        let borrowing_power_usd = total_value_usd
+            .apply(self.collateral_factor)
+            .ok_or(LendingError::Overflow)?;
+        Ok(CollateralSummary {
+            total_value_usd,
+            borrowing_power_usd,
+        })
+    }
+
+    /// Adds collateral in ordinary asset units (for example, `1.5` ETH).
     pub fn deposit(
         &mut self,
         id: AccountId,
@@ -52,6 +96,7 @@ impl Protocol {
         self.position_mut(id)?.deposit(asset, amount)
     }
 
+    /// Reduces debt in ordinary asset units.
     pub fn repay(
         &mut self,
         id: AccountId,
@@ -69,11 +114,11 @@ impl Protocol {
         amount: Amount,
         feed: &dyn PriceFeed,
     ) -> Result<(), LendingError> {
-        let liquidation_threshold = self.liquidation_threshold;
+        let collateral_factor = self.collateral_factor;
         let position = self.position_mut(id)?;
         let mut candidate = position.clone();
         candidate.add_debt(asset, amount)?;
-        if candidate.health(feed, liquidation_threshold)? == Health::Liquidatable {
+        if candidate.health(feed, collateral_factor)? == Health::Liquidatable {
             return Err(LendingError::WouldBeUnhealthy);
         }
         *position = candidate;
@@ -87,7 +132,7 @@ impl Protocol {
     ) -> Result<Vec<AccountId>, LendingError> {
         let mut accounts = Vec::new();
         for (&id, position) in &self.positions {
-            if position.health(feed, self.liquidation_threshold)? == Health::Liquidatable {
+            if position.health(feed, self.collateral_factor)? == Health::Liquidatable {
                 accounts.push(id);
             }
         }
@@ -101,9 +146,9 @@ impl Protocol {
         id: AccountId,
         feed: &dyn PriceFeed,
     ) -> Result<Position, LendingError> {
-        let liquidation_threshold = self.liquidation_threshold;
+        let collateral_factor = self.collateral_factor;
         let position = self.position_mut(id)?;
-        if position.health(feed, liquidation_threshold)? != Health::Liquidatable {
+        if position.health(feed, collateral_factor)? != Health::Liquidatable {
             return Err(LendingError::NotLiquidatable(id));
         }
         Ok(std::mem::take(position))
@@ -120,25 +165,34 @@ impl Protocol {
 mod tests {
     use super::*;
     use crate::domain::{Price, StaticFeed};
+    use rust_decimal::Decimal;
+
+    fn decimal(value: &str) -> Decimal {
+        value.parse().expect("valid decimal")
+    }
+
+    fn collateral_factor() -> CollateralFactor {
+        CollateralFactor::new(decimal("0.8")).expect("0.8 is valid")
+    }
 
     fn feed() -> StaticFeed {
         StaticFeed::new([
-            (Asset::Eth, Price::new(200_000_000_000)),   // $2,000
-            (Asset::Btc, Price::new(5_000_000_000_000)), // $50,000
+            (Asset::Eth, Price::new(decimal("2000"))),
+            (Asset::Btc, Price::new(decimal("50000"))),
         ])
     }
 
     // Protocol with an account holding 1.5 ETH of collateral, at an 80% threshold
     fn protocol_with_eth() -> Result<(Protocol, AccountId), LendingError> {
-        let mut protocol = Protocol::new(Bps::new(8_000).expect("80% is a valid ratio"));
+        let mut protocol = Protocol::new(collateral_factor());
         let id = protocol.open_account()?;
-        protocol.deposit(id, Asset::Eth, Amount::new(1_500_000))?;
+        protocol.deposit(id, Asset::Eth, Amount::new(decimal("1.5")))?;
         Ok((protocol, id))
     }
 
     #[test]
     fn accounts_get_distinct_ids() -> Result<(), LendingError> {
-        let mut protocol = Protocol::new(Bps::new(8_000).expect("80% is a valid ratio"));
+        let mut protocol = Protocol::new(collateral_factor());
         assert_ne!(protocol.open_account()?, protocol.open_account()?);
         Ok(())
     }
@@ -146,23 +200,37 @@ mod tests {
     #[test]
     fn borrow_within_limit_succeeds() -> Result<(), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        protocol.borrow(id, Asset::Btc, Amount::new(30_000), &feed())?;
+        protocol.borrow(id, Asset::Btc, Amount::new(decimal("0.03")), &feed())?;
         assert_eq!(protocol.health(id, &feed())?, Health::Safe);
+        Ok(())
+    }
+
+    #[test]
+    fn borrow_usd_uses_the_dollar_price() -> Result<(), LendingError> {
+        let (mut protocol, id) = protocol_with_eth()?;
+        protocol.borrow(id, Asset::Usd, Amount::new(decimal("2400")), &feed())?;
+        assert_eq!(protocol.health(id, &feed())?, Health::Warning);
+
+        assert!(matches!(
+            protocol.borrow(id, Asset::Usd, Amount::new(decimal("0.01")), &feed()),
+            Err(LendingError::WouldBeUnhealthy)
+        ));
+        assert_eq!(protocol.health(id, &feed())?, Health::Warning);
         Ok(())
     }
 
     #[test]
     fn borrow_up_to_the_exact_limit_succeeds() -> Result<(), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        protocol.borrow(id, Asset::Btc, Amount::new(48_000), &feed())?;
-        assert_eq!(protocol.health(id, &feed())?, Health::Safe);
+        protocol.borrow(id, Asset::Btc, Amount::new(decimal("0.048")), &feed())?;
+        assert_eq!(protocol.health(id, &feed())?, Health::Warning);
         Ok(())
     }
 
     #[test]
     fn borrow_beyond_limit_is_rejected_and_changes_nothing() -> Result<(), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        let result = protocol.borrow(id, Asset::Btc, Amount::new(48_001), &feed());
+        let result = protocol.borrow(id, Asset::Btc, Amount::new(decimal("0.048001")), &feed());
         assert!(matches!(result, Err(LendingError::WouldBeUnhealthy)));
         assert_eq!(protocol.health(id, &feed())?, Health::NoDebt);
         Ok(())
@@ -171,15 +239,15 @@ mod tests {
     // ETH crashes from $2,000 to $1,200: 1.5 ETH now backs only $1,440 of debt
     fn crashed_feed() -> StaticFeed {
         StaticFeed::new([
-            (Asset::Eth, Price::new(120_000_000_000)),
-            (Asset::Btc, Price::new(5_000_000_000_000)),
+            (Asset::Eth, Price::new(decimal("1200"))),
+            (Asset::Btc, Price::new(decimal("50000"))),
         ])
     }
 
     // Account with 1.5 ETH of collateral and 0.03 BTC ($1,500) of debt, safe at $2,000
     fn protocol_with_loan() -> Result<(Protocol, AccountId), LendingError> {
         let (mut protocol, id) = protocol_with_eth()?;
-        protocol.borrow(id, Asset::Btc, Amount::new(30_000), &feed())?;
+        protocol.borrow(id, Asset::Btc, Amount::new(decimal("0.03")), &feed())?;
         Ok((protocol, id))
     }
 
@@ -187,7 +255,7 @@ mod tests {
     fn only_unhealthy_accounts_are_listed() -> Result<(), LendingError> {
         let (mut protocol, borrower) = protocol_with_loan()?;
         let depositor = protocol.open_account()?;
-        protocol.deposit(depositor, Asset::Eth, Amount::new(1_000_000))?;
+        protocol.deposit(depositor, Asset::Eth, Amount::new(decimal("1")))?;
         assert!(protocol.liquidatable_accounts(&feed())?.is_empty());
         assert_eq!(
             protocol.liquidatable_accounts(&crashed_feed())?,
@@ -217,8 +285,8 @@ mod tests {
 
     #[test]
     fn unknown_account_is_rejected() {
-        let mut protocol = Protocol::new(Bps::new(8_000).expect("80% is a valid ratio"));
-        let result = protocol.deposit(AccountId(42), Asset::Eth, Amount::new(1));
+        let mut protocol = Protocol::new(collateral_factor());
+        let result = protocol.deposit(AccountId(42), Asset::Eth, Amount::new(decimal("1")));
         assert!(matches!(
             result,
             Err(LendingError::UnknownAccount(AccountId(42)))

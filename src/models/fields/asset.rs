@@ -7,6 +7,7 @@ pub enum Asset {
     Eth,
     Btc,
     Solana,
+    Usd,
 }
 
 impl Display for Asset {
@@ -15,6 +16,7 @@ impl Display for Asset {
             Asset::Eth => write!(f, "ETH"),
             Asset::Btc => write!(f, "BTC"),
             Asset::Solana => write!(f, "SOL"),
+            Asset::Usd => write!(f, "USD"),
         }
     }
 }

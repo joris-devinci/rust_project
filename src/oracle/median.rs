@@ -16,7 +16,7 @@ pub fn median(prices: &mut [Price]) -> Option<Price> {
     if len % 2 == 1 {
         return Some(upper);
     }
-    lower.iter().max().map(|&below| below.midpoint(upper))
+    lower.iter().max().and_then(|&below| below.midpoint(upper))
 }
 
 /// Median price of each asset across its quotes, one quote per venue: a single venue
@@ -35,9 +35,17 @@ pub fn median_by_asset(quotes: impl IntoIterator<Item = (Asset, Price)>) -> Hash
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rust_decimal::Decimal;
 
-    fn prices(raw: &[u128]) -> Vec<Price> {
-        raw.iter().map(|&value| Price::new(value)).collect()
+    fn decimal(value: &str) -> Decimal {
+        value.parse().expect("valid decimal")
+    }
+
+    fn prices(values: &[&str]) -> Vec<Price> {
+        values
+            .iter()
+            .map(|&value| Price::new(decimal(value)))
+            .collect()
     }
 
     #[test]
@@ -47,30 +55,39 @@ mod tests {
 
     #[test]
     fn odd_count_takes_the_middle_price() {
-        assert_eq!(median(&mut prices(&[30, 10, 20])), Some(Price::new(20)));
+        assert_eq!(
+            median(&mut prices(&["30", "10", "20"])),
+            Some(Price::new(decimal("20")))
+        );
     }
 
     #[test]
     fn even_count_takes_the_midpoint_of_the_two_middle_prices() {
-        assert_eq!(median(&mut prices(&[40, 10, 30, 20])), Some(Price::new(25)));
+        assert_eq!(
+            median(&mut prices(&["40", "10", "30", "20"])),
+            Some(Price::new(decimal("25")))
+        );
     }
 
     #[test]
     fn one_outlier_does_not_move_the_median() {
-        let mut ticks = prices(&[2_000, 2_001, 1_999, 2_000, 1]);
-        assert_eq!(median(&mut ticks), Some(Price::new(2_000)));
+        let mut ticks = prices(&["2000", "2001", "1999", "2000", "1"]);
+        assert_eq!(median(&mut ticks), Some(Price::new(decimal("2000"))));
     }
 
     #[test]
     fn each_asset_gets_the_median_of_its_venues() {
         let medians = median_by_asset([
-            (Asset::Eth, Price::new(2_000)),
-            (Asset::Btc, Price::new(50_000)),
-            (Asset::Eth, Price::new(2_002)),
-            (Asset::Eth, Price::new(1)), // one venue sending a wrong price
+            (Asset::Eth, Price::new(decimal("2000"))),
+            (Asset::Btc, Price::new(decimal("50000"))),
+            (Asset::Eth, Price::new(decimal("2002"))),
+            (Asset::Eth, Price::new(decimal("1"))), // one venue sending a wrong price
         ]);
-        assert_eq!(medians.get(&Asset::Eth), Some(&Price::new(2_000)));
-        assert_eq!(medians.get(&Asset::Btc), Some(&Price::new(50_000)));
+        assert_eq!(medians.get(&Asset::Eth), Some(&Price::new(decimal("2000"))));
+        assert_eq!(
+            medians.get(&Asset::Btc),
+            Some(&Price::new(decimal("50000")))
+        );
         assert_eq!(medians.get(&Asset::Solana), None);
     }
 }

@@ -1,60 +1,62 @@
+//! Decimal money types: amounts are asset units, prices are USD per unit, and ratios
+//! are fractions from zero to one. No caller multiplies or divides by hidden scales.
+
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-const PRICE_SCALE: u128 = 100_000_000;
-const BPS_SCALE: u16 = 10_000;
-
-/// USD price of one unit of an asset, with 8 decimals: $2,000.50 is `200_050_000_000`.
+/// Decimal USD price for one unit of an asset, for example `2000` means $2,000.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Price(u128);
+#[serde(transparent)]
+pub struct Price(Decimal);
 
-/// Quantity of an asset, with 6 decimals for every asset: 1.5 ETH is `1_500_000`.
+/// Decimal quantity of an asset, for example `1.5` means one and a half units.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Amount(Decimal);
+
+/// Decimal USD value.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Amount(u128);
+#[serde(transparent)]
+pub struct UsdValue(Decimal);
 
-/// Value in USD, with 6 decimals like `Amount`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct UsdValue(u128);
-
-/// Ratio in basis points, from 0 to 10,000: 80% is `8_000`.
+/// Fraction of collateral value that may back debt; `0.8` means 80%.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Bps(u16);
+pub struct CollateralFactor(Decimal);
 
 impl Price {
-    pub const fn new(raw: u128) -> Self {
-        Self(raw)
+    pub fn new(value: Decimal) -> Self {
+        Self(value)
     }
 
-    /// Average of two prices, rounding down, without overflow.
-    pub fn midpoint(self, other: Self) -> Self {
-        Self(self.0.midpoint(other.0))
+    /// Returns the midpoint without adding the full values first.
+    pub fn midpoint(self, other: Self) -> Option<Self> {
+        let half = Decimal::new(5, 1);
+        self.0
+            .checked_mul(half)?
+            .checked_add(other.0.checked_mul(half)?)
+            .map(Self)
     }
 
+    /// Formats the decimal without artificial trailing zeroes.
     pub fn to_decimal_string(self) -> String {
-        format!(
-            "{}.{:08}",
-            self.0 / PRICE_SCALE,
-            self.0 % PRICE_SCALE
-        )
+        format_decimal(self.0)
     }
 }
 
 impl Amount {
-    pub const fn new(raw: u128) -> Self {
-        Self(raw)
+    pub const ZERO: Self = Self(Decimal::ZERO);
+
+    pub fn new(value: Decimal) -> Self {
+        Self(value)
     }
 
-    /// Converts to USD, rounding down. Returns `None` on overflow.
+    pub fn is_negative(self) -> bool {
+        self.0 < Decimal::ZERO
+    }
+
+    /// Converts an asset quantity to USD using the feed's USD-per-asset price.
     pub fn to_usd(self, price: Price) -> Option<UsdValue> {
-        self.0
-            .checked_mul(price.0)
-            .map(|value| UsdValue(value / PRICE_SCALE))
-    }
-
-    /// Converts to USD, rounding up. Used for debt, so that dust is never valued at zero.
-    pub fn to_usd_rounded_up(self, price: Price) -> Option<UsdValue> {
-        self.0
-            .checked_mul(price.0)
-            .map(|value| UsdValue(value.div_ceil(PRICE_SCALE)))
+        self.0.checked_mul(price.0).map(UsdValue)
     }
 
     pub fn checked_add(self, other: Self) -> Option<Self> {
@@ -67,28 +69,43 @@ impl Amount {
 }
 
 impl UsdValue {
-    pub const ZERO: Self = Self(0);
+    pub const ZERO: Self = Self(Decimal::ZERO);
+
+    /// Formats the USD amount without artificial trailing zeroes.
+    pub fn to_decimal_string(self) -> String {
+        format_decimal(self.0)
+    }
 
     pub fn checked_add(self, other: Self) -> Option<Self> {
         self.0.checked_add(other.0).map(Self)
     }
 
-    /// Applies a ratio, rounding down. Returns `None` on overflow.
-    pub fn apply(self, ratio: Bps) -> Option<Self> {
+    /// Returns debt as a percentage of the available borrowing power.
+    pub fn utilization_percent(self, borrowing_power: Self) -> Option<Decimal> {
+        if borrowing_power.0 <= Decimal::ZERO {
+            return None;
+        }
         self.0
-            .checked_mul(u128::from(ratio.0))
-            .map(|value| Self(value / u128::from(BPS_SCALE)))
+            .checked_div(borrowing_power.0)?
+            .checked_mul(Decimal::new(100, 0))
+    }
+
+    /// Applies a collateral factor to a USD value.
+    pub fn apply(self, factor: CollateralFactor) -> Option<Self> {
+        self.0.checked_mul(factor.0).map(Self)
     }
 }
 
-impl Bps {
-    /// Returns `None` above 100%.
-    pub const fn new(raw: u16) -> Option<Self> {
-        if raw <= BPS_SCALE {
-            Some(Self(raw))
-        } else {
-            None
-        }
+fn format_decimal(value: Decimal) -> String {
+    value.normalize().to_string()
+}
+
+impl CollateralFactor {
+    /// Creates a factor from 0 through 1 inclusive; `0.8` represents 80%.
+    pub fn new(value: Decimal) -> Option<Self> {
+        (Decimal::ZERO..=Decimal::ONE)
+            .contains(&value)
+            .then_some(Self(value))
     }
 }
 
@@ -96,53 +113,57 @@ impl Bps {
 mod tests {
     use super::*;
 
-    #[test]
-    fn eth_amount_converts_to_usd() {
-        let amount = Amount::new(1_500_000); // 1.5 ETH
-        let price = Price::new(200_000_000_000); // $2,000
-        assert_eq!(amount.to_usd(price), Some(UsdValue(3_000_000_000)));
+    fn decimal(value: &str) -> Decimal {
+        value.parse().expect("valid decimal")
     }
 
     #[test]
-    fn one_dollar_price_keeps_the_amount_value() {
-        let amount = Amount::new(1_500_000_000); // 1,500 USDC
-        let price = Price::new(100_000_000); // $1
-        assert_eq!(amount.to_usd(price), Some(UsdValue(1_500_000_000)));
+    fn asset_quantity_times_usd_price_gives_usd_value() {
+        let amount = Amount::new(decimal("1.5"));
+        let price = Price::new(decimal("2000"));
+        assert_eq!(amount.to_usd(price), Some(UsdValue(decimal("3000"))));
     }
 
     #[test]
-    fn to_usd_returns_none_on_overflow() {
-        assert_eq!(Amount::new(u128::MAX).to_usd(Price::new(2)), None);
+    fn decimal_values_are_not_rescaled() {
+        let amount = Amount::new(decimal("1500"));
+        let one_dollar = Price::new(decimal("1"));
+        assert_eq!(amount.to_usd(one_dollar), Some(UsdValue(decimal("1500"))));
     }
 
     #[test]
-    fn dust_rounds_down_to_zero_but_up_to_one_unit() {
-        let dust = Amount::new(1); // 0.000001 of an asset
-        let price = Price::new(50_000_000); // $0.50
-        assert_eq!(dust.to_usd(price), Some(UsdValue(0)));
-        assert_eq!(dust.to_usd_rounded_up(price), Some(UsdValue(1)));
+    fn decimal_arithmetic_reports_overflow() {
+        let amount = Amount::new(Decimal::MAX);
+        assert_eq!(amount.checked_add(Amount::new(Decimal::ONE)), None);
     }
 
     #[test]
-    fn applying_80_percent_to_3000_usd_gives_2400_usd() {
-        let ratio = Bps::new(8_000).expect("80% is a valid ratio");
+    fn fractional_values_are_kept_exactly() {
+        let dust = Amount::new(decimal("0.000001"));
+        let price = Price::new(decimal("0.5"));
+        assert_eq!(dust.to_usd(price), Some(UsdValue(decimal("0.0000005"))));
+    }
+
+    #[test]
+    fn applying_eighty_percent_to_three_thousand_gives_two_thousand_four_hundred() {
+        let factor = CollateralFactor::new(decimal("0.8")).expect("0.8 is valid");
         assert_eq!(
-            UsdValue(3_000_000_000).apply(ratio),
-            Some(UsdValue(2_400_000_000))
+            UsdValue(decimal("3000")).apply(factor),
+            Some(UsdValue(decimal("2400")))
         );
     }
 
     #[test]
-    fn midpoint_rounds_down() {
-        assert_eq!(Price::new(3).midpoint(Price::new(6)), Price::new(4));
-        assert_eq!(
-            Price::new(u128::MAX).midpoint(Price::new(u128::MAX)),
-            Price::new(u128::MAX)
-        );
+    fn collateral_factor_must_be_between_zero_and_one() {
+        assert!(CollateralFactor::new(decimal("1.01")).is_none());
+        assert!(CollateralFactor::new(decimal("-0.01")).is_none());
     }
 
     #[test]
-    fn bps_above_100_percent_is_rejected() {
-        assert_eq!(Bps::new(10_001), None);
+    fn midpoint_averages_decimal_prices() {
+        assert_eq!(
+            Price::new(decimal("3")).midpoint(Price::new(decimal("6"))),
+            Some(Price::new(decimal("4.5")))
+        );
     }
 }

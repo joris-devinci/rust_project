@@ -34,7 +34,9 @@ impl IntoResponse for ApiError {
                 | LendingError::RepayExceedsDebt(_)
                 | LendingError::NotLiquidatable(_),
             ) => StatusCode::UNPROCESSABLE_ENTITY,
-            Self::Lending(LendingError::Overflow) => StatusCode::BAD_REQUEST,
+            Self::Lending(LendingError::Overflow | LendingError::NegativeAmount) => {
+                StatusCode::BAD_REQUEST
+            }
             Self::Lending(LendingError::Oracle(_)) => StatusCode::SERVICE_UNAVAILABLE,
             Self::InvalidPriceData(_) | Self::Database(_) => StatusCode::SERVICE_UNAVAILABLE,
             Self::LockPoisoned => StatusCode::INTERNAL_SERVER_ERROR,
