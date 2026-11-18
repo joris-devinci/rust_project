@@ -7,3 +7,7 @@ pub enum Asset {
     Solana,
     Usdc,
 }
+
+impl Asset {
+    pub const ALL: [Self; 4] = [Self::Eth, Self::Btc, Self::Solana, Self::Usdc];
+}

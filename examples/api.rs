@@ -10,7 +10,7 @@ use rust_project::{
 };
 use tokio::{net::TcpListener, runtime::Runtime};
 
-const ADDRESS: &str = "127.0.0.1:3000";
+const ADDRESS: &str = "127.0.0.1:3001";
 const KEEPER_PERIOD: Duration = Duration::from_secs(5);
 
 fn main() -> Result<(), Box<dyn Error>> {

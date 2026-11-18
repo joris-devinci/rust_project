@@ -7,7 +7,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{Amount, Asset},
+    domain::{Amount, Asset, Price},
     protocol::{AccountId, Health, Position},
 };
 
@@ -15,6 +15,7 @@ use super::{AppState, error::ApiError};
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/prices", get(prices))
         .route("/accounts", post(open_account))
         .route("/accounts/{id}", get(account))
         .route("/accounts/{id}/deposit", post(deposit))
@@ -40,6 +41,24 @@ struct AccountView {
 struct Movement {
     asset: Asset,
     amount: Amount,
+}
+
+#[derive(Serialize)]
+struct AssetPrice {
+    asset: Asset,
+    /// `null` when the oracle has no recent price for the asset
+    price: Option<Price>,
+}
+
+async fn prices(State(state): State<AppState>) -> Json<Vec<AssetPrice>> {
+    let prices = Asset::ALL
+        .into_iter()
+        .map(|asset| AssetPrice {
+            asset,
+            price: state.feed.price(asset).ok(),
+        })
+        .collect();
+    Json(prices)
 }
 
 async fn open_account(
