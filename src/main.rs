@@ -45,12 +45,11 @@ fn main() {
 
         // Producer & Consumer
         let mut handles = Vec::new();
-        let producer_count = 3;
+        let producer_count = 9;
 
         for tid in 0..producer_count {
             handles.push(tokio::spawn(threads::producer::producer(
                 tid,
-                producer_count,
             )));
         }
 

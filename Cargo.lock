@@ -1495,6 +1495,7 @@ dependencies = [
  "reqwest",
  "rust_decimal",
  "serde",
+ "serde_json",
  "sqlx",
  "thiserror",
  "tokio",

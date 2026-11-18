@@ -49,7 +49,8 @@ impl AppState {
     }
 
     /// Takes the latest price of each venue for each asset, then the median across venues,
-    /// or returns the configured static feed. A venue silent for 30 seconds no longer counts.
+    /// or returns the configured static feed. Coinbase quotes expire after 30 seconds and
+    /// CoinGecko quotes after 90 seconds to match its one-minute polling interval.
     pub(super) async fn get_current_prices(&self) -> Result<Arc<dyn PriceFeed>, ApiError> {
         match &self.prices {
             PriceSource::Static(feed) => Ok(Arc::clone(feed)),
@@ -58,7 +59,10 @@ impl AppState {
                     r#"
                     SELECT DISTINCT ON (asset, venue) asset, price::text AS price
                     FROM ticker
-                    WHERE "date" > now() - interval '30 seconds'
+                    WHERE "date" > now() - CASE
+                        WHEN venue = 'COINGECKO' THEN interval '90 seconds'
+                        ELSE interval '30 seconds'
+                    END
                     ORDER BY asset, venue, "date" DESC, id DESC
                     "#,
                 )
@@ -79,7 +83,8 @@ impl AppState {
                         Ok((asset, price))
                     })
                     .collect::<Result<Vec<_>, ApiError>>()?;
-
+                
+                // println!("{:?}", prices);
                 Ok(Arc::new(StaticFeed::new(median_by_asset(prices))))
             }
         }
