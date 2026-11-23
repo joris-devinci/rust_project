@@ -38,10 +38,7 @@ fn median_is_calculated_per_asset() {
         (Asset::Eth, Price::new(decimal("2002"))),
         (Asset::Eth, Price::new(decimal("1"))),
     ]);
-    assert_eq!(
-        medians.get(&Asset::Eth),
-        Some(&Price::new(decimal("2000")))
-    );
+    assert_eq!(medians.get(&Asset::Eth), Some(&Price::new(decimal("2000"))));
     assert_eq!(
         medians.get(&Asset::Btc),
         Some(&Price::new(decimal("50000")))

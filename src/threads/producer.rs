@@ -1,9 +1,5 @@
-use crate::models::{ticker::Ticker, ticker_dto::TickerDTO, Asset, Venue};
-use std::{
-    collections::HashMap,
-    sync::LazyLock,
-    time::Duration,
-};
+use crate::models::{Asset, Venue, ticker::Ticker, ticker_dto::TickerDTO};
+use std::{collections::HashMap, sync::LazyLock, time::Duration};
 
 const REQUESTS_PER_SECOND_LIMIT_COINBASE: f64 = 10.0;
 const REQUESTS_PER_SECOND_LIMIT_BINANCE: f64 = 3.0;
@@ -22,22 +18,22 @@ static ENDPOINTS: LazyLock<HashMap<u8, (Asset, Venue, String)>> = LazyLock::new(
     ])
 });
 
-pub async fn producer(
-    tid: u8,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn producer(tid: u8) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let queue = crate::threads::queue::QUEUE.clone();
     let (asset, venue, url) = ENDPOINTS.get(&tid).expect("Unknown endpoint");
-    
-    let request_interval = Duration::from_secs_f64(
-        match venue {
-            Venue::Coinbase => 3.0 / REQUESTS_PER_SECOND_LIMIT_COINBASE,
-            Venue::Binance => 3.0 / REQUESTS_PER_SECOND_LIMIT_BINANCE,
-            Venue::CoinGecko => 120.0,
-        },
-    );
+
+    let request_interval = Duration::from_secs_f64(match venue {
+        Venue::Coinbase => 3.0 / REQUESTS_PER_SECOND_LIMIT_COINBASE,
+        Venue::Binance => 3.0 / REQUESTS_PER_SECOND_LIMIT_BINANCE,
+        Venue::CoinGecko => 120.0,
+    });
 
     let client = reqwest::Client::builder()
-        .user_agent(concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!(
+            env!("CARGO_PKG_NAME"),
+            "/",
+            env!("CARGO_PKG_VERSION")
+        ))
         .build()?;
 
     loop {
@@ -53,9 +49,9 @@ pub async fn producer(
 
         let end_time = tokio::time::Instant::now();
         let elapsed = end_time.duration_since(start_time);
-        
+
         if elapsed < request_interval {
-                tokio::time::sleep(request_interval - elapsed).await;
+            tokio::time::sleep(request_interval - elapsed).await;
         }
     }
 }

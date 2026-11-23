@@ -13,8 +13,7 @@ fn decimal_money_operations() {
     let price = Price::new(decimal("2000"));
     assert_eq!(amount.to_usd(price), Some(UsdValue::new(decimal("3000"))));
     assert_eq!(
-        Amount::new(decimal("1500"))
-            .to_usd(Price::new(decimal("1"))),
+        Amount::new(decimal("1500")).to_usd(Price::new(decimal("1"))),
         Some(UsdValue::new(decimal("1500")))
     );
     assert_eq!(
@@ -52,8 +51,7 @@ fn static_feed_and_usd_price_rules() {
         Some(Price::new(decimal("2000")))
     );
     assert!(matches!(
-        StaticFeed::new([(Asset::Btc, Price::new(decimal("50000")))])
-            .price(Asset::Eth),
+        StaticFeed::new([(Asset::Btc, Price::new(decimal("50000")))]).price(Asset::Eth),
         Err(OracleError::NoPrice(Asset::Eth))
     ));
     assert_eq!(

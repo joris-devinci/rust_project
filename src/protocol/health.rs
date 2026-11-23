@@ -77,4 +77,3 @@ pub(super) fn total_usd(
             total.checked_add(value).ok_or(LendingError::Overflow)
         })
 }
-

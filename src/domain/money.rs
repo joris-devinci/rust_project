@@ -28,6 +28,10 @@ impl Price {
         Self(value)
     }
 
+    pub fn to_decimal(self) -> Decimal {
+        self.0
+    }
+
     /// Returns the midpoint without adding the full values first.
     pub fn midpoint(self, other: Self) -> Option<Self> {
         let half = Decimal::new(5, 1);

@@ -1,8 +1,5 @@
 use rust_decimal::Decimal;
-use rust_project::{
-    api::parse_price,
-    domain::Price,
-};
+use rust_project::{api::parse_price, domain::Price};
 
 #[test]
 fn parses_database_prices_without_rescaling() {

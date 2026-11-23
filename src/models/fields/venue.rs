@@ -4,7 +4,7 @@ use std::fmt::{Display, Formatter};
 pub enum Venue {
     Coinbase,
     CoinGecko,
-    Binance
+    Binance,
 }
 
 impl Display for Venue {

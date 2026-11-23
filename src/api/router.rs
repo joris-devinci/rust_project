@@ -1,4 +1,4 @@
-//! HTTP endpoints for accounts. Amounts and displayed prices use ordinary decimal units.
+//! HTTP routes for accounts and prices.
 
 use axum::{
     Json, Router,
@@ -31,7 +31,6 @@ struct OpenedAccount {
     id: AccountId,
 }
 
-/// Account snapshot; `prices` lists the current USD quote for each available asset.
 #[derive(Serialize)]
 struct AccountView {
     id: AccountId,
@@ -63,7 +62,6 @@ struct AssetPriceView {
     price_usd: String,
 }
 
-/// Request body for deposit, borrow, and repay; `amount` is a decimal asset quantity.
 #[derive(Deserialize)]
 struct Movement {
     asset: Asset,
@@ -73,7 +71,6 @@ struct Movement {
 #[derive(Serialize)]
 struct AssetPrice {
     asset: Asset,
-    /// `null` when the oracle has no recent price for the asset
     price: Option<Price>,
 }
 

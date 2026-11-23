@@ -31,13 +31,20 @@ fn position_deposit_repay_and_validation_rules() -> Result<(), LendingError> {
     let mut position = Position::default();
     position.deposit(Asset::Eth, Amount::new(decimal("1")))?;
     position.deposit(Asset::Eth, Amount::new(decimal("0.5")))?;
-    assert_eq!(position.health_report(&feed("2000"), factor())?.status, Health::NoDebt);
+    assert_eq!(
+        position.health_report(&feed("2000"), factor())?.status,
+        Health::NoDebt
+    );
 
     assert!(matches!(
         position.deposit(Asset::Eth, Amount::new(decimal("-1"))),
         Err(LendingError::NegativeAmount)
     ));
-    assert!(position.repay(Asset::Btc, Amount::new(decimal("-1"))).is_err());
+    assert!(
+        position
+            .repay(Asset::Btc, Amount::new(decimal("-1")))
+            .is_err()
+    );
     Ok(())
 }
 
@@ -48,15 +55,17 @@ fn protocol_borrow_health_and_liquidation_rules() -> Result<(), LendingError> {
     assert_eq!(protocol.health(id, &feed("2000"))?, Health::Safe);
 
     assert!(matches!(
-        protocol.borrow(id, Asset::Btc, Amount::new(decimal("0.048001")), &feed("2000")),
+        protocol.borrow(
+            id,
+            Asset::Btc,
+            Amount::new(decimal("0.048001")),
+            &feed("2000")
+        ),
         Err(LendingError::WouldBeUnhealthy)
     ));
 
     let crashed = feed("1200");
-    assert_eq!(
-        protocol.liquidatable_accounts(&crashed)?,
-        vec![id]
-    );
+    assert_eq!(protocol.liquidatable_accounts(&crashed)?, vec![id]);
     let liquidated = protocol.liquidate(id, &crashed)?;
     assert!(liquidated.collateral_value(&crashed).is_ok());
     Ok(())

@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use rust_decimal::Decimal;
 use rust_project::{
     domain::{Amount, Asset, CollateralFactor, OracleError, Price, StaticFeed},
     protocol::{Health, LendingError, evaluate},
 };
+use std::collections::HashMap;
 
 fn decimal(value: &str) -> Decimal {
     value.parse().expect("valid decimal")

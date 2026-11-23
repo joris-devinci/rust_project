@@ -30,7 +30,7 @@ pub async fn consumer() -> Result<(), Box<dyn std::error::Error + Send + Sync>> 
         )
         .bind(ticker.asset.to_string())
         .bind(ticker.venue.to_string())
-        .bind(ticker.price.0)
+        .bind(ticker.price.to_decimal())
         .bind(ticker.date)
         .execute(&pool)
         .await?;
