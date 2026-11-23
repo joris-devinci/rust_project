@@ -71,6 +71,10 @@ impl Amount {
 impl UsdValue {
     pub const ZERO: Self = Self(Decimal::ZERO);
 
+    pub fn new(value: Decimal) -> Self {
+        Self(value)
+    }
+
     /// Formats the USD amount without artificial trailing zeroes.
     pub fn to_decimal_string(self) -> String {
         format_decimal(self.0)
@@ -106,64 +110,5 @@ impl CollateralFactor {
         (Decimal::ZERO..=Decimal::ONE)
             .contains(&value)
             .then_some(Self(value))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn decimal(value: &str) -> Decimal {
-        value.parse().expect("valid decimal")
-    }
-
-    #[test]
-    fn asset_quantity_times_usd_price_gives_usd_value() {
-        let amount = Amount::new(decimal("1.5"));
-        let price = Price::new(decimal("2000"));
-        assert_eq!(amount.to_usd(price), Some(UsdValue(decimal("3000"))));
-    }
-
-    #[test]
-    fn decimal_values_are_not_rescaled() {
-        let amount = Amount::new(decimal("1500"));
-        let one_dollar = Price::new(decimal("1"));
-        assert_eq!(amount.to_usd(one_dollar), Some(UsdValue(decimal("1500"))));
-    }
-
-    #[test]
-    fn decimal_arithmetic_reports_overflow() {
-        let amount = Amount::new(Decimal::MAX);
-        assert_eq!(amount.checked_add(Amount::new(Decimal::ONE)), None);
-    }
-
-    #[test]
-    fn fractional_values_are_kept_exactly() {
-        let dust = Amount::new(decimal("0.000001"));
-        let price = Price::new(decimal("0.5"));
-        assert_eq!(dust.to_usd(price), Some(UsdValue(decimal("0.0000005"))));
-    }
-
-    #[test]
-    fn applying_eighty_percent_to_three_thousand_gives_two_thousand_four_hundred() {
-        let factor = CollateralFactor::new(decimal("0.8")).expect("0.8 is valid");
-        assert_eq!(
-            UsdValue(decimal("3000")).apply(factor),
-            Some(UsdValue(decimal("2400")))
-        );
-    }
-
-    #[test]
-    fn collateral_factor_must_be_between_zero_and_one() {
-        assert!(CollateralFactor::new(decimal("1.01")).is_none());
-        assert!(CollateralFactor::new(decimal("-0.01")).is_none());
-    }
-
-    #[test]
-    fn midpoint_averages_decimal_prices() {
-        assert_eq!(
-            Price::new(decimal("3")).midpoint(Price::new(decimal("6"))),
-            Some(Price::new(decimal("4.5")))
-        );
     }
 }

@@ -18,9 +18,8 @@ fn main() {
 
     runtime.block_on(async {
         // API
-        let collateral_factor =
-            CollateralFactor::new("0.8".parse::<Decimal>().expect("valid decimal"))
-                .expect("collateral factor must be between 0 and 1");
+        let collateral_factor = CollateralFactor::new("0.8".parse::<Decimal>().expect("valid decimal"))
+            .expect("collateral factor must be between 0 and 1");
         let pool = PgPoolOptions::new()
             .max_connections(5)
             .connect(&database_url)

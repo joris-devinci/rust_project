@@ -15,7 +15,7 @@ use crate::{
 
 use error::ApiError;
 
-pub use keeper::run_keeper;
+pub use keeper::{liquidate_unhealthy, run_keeper};
 pub use routes::router;
 
 #[derive(Clone)]
@@ -90,7 +90,7 @@ impl AppState {
         }
     }
 
-    fn read(&self) -> Result<RwLockReadGuard<'_, Protocol>, ApiError> {
+    pub fn read(&self) -> Result<RwLockReadGuard<'_, Protocol>, ApiError> {
         self.protocol.read().map_err(|_| ApiError::LockPoisoned)
     }
 
@@ -99,7 +99,7 @@ impl AppState {
     }
 }
 
-fn parse_asset(value: &str) -> Result<Asset, ApiError> {
+pub fn parse_asset(value: &str) -> Result<Asset, ApiError> {
     match value {
         "BTC" => Ok(Asset::Btc),
         "ETH" => Ok(Asset::Eth),
@@ -111,31 +111,7 @@ fn parse_asset(value: &str) -> Result<Asset, ApiError> {
     }
 }
 
-fn parse_price(value: &str) -> Option<Price> {
+pub fn parse_price(value: &str) -> Option<Price> {
     let value = value.parse::<Decimal>().ok()?;
     (value > Decimal::ZERO).then_some(Price::new(value))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn parses_database_prices_without_rescaling() {
-        assert_eq!(
-            parse_price("1234.5"),
-            Some(Price::new(Decimal::new(12345, 1)))
-        );
-        assert_eq!(
-            parse_price("1.2345678900"),
-            Some(Price::new(Decimal::new(123456789, 8)))
-        );
-    }
-
-    #[test]
-    fn rejects_prices_that_cannot_be_represented_safely() {
-        assert_eq!(parse_price("0"), None);
-        assert_eq!(parse_price("-1"), None);
-        assert_eq!(parse_price("not-a-price"), None);
-    }
 }
