@@ -5,13 +5,16 @@ const REQUESTS_PER_SECOND_LIMIT_COINBASE: f64 = 10.0;
 const REQUESTS_PER_SECOND_LIMIT_BINANCE: f64 = 3.0;
 
 static ENDPOINTS: LazyLock<HashMap<u8, (Asset, Venue, String)>> = LazyLock::new(|| {
+    let api_key = std::env::var("COINGECKO_API_KEY")
+            .expect("COINGECKO_API_KEY must be set");
+
     HashMap::from([
         (0, (Asset::Btc, Venue::Coinbase, "https://api.exchange.coinbase.com/products/BTC-USD/ticker".to_string())),
         (1, (Asset::Eth, Venue::Coinbase, "https://api.exchange.coinbase.com/products/ETH-USD/ticker".to_string())),
         (2, (Asset::Solana, Venue::Coinbase, "https://api.exchange.coinbase.com/products/SOL-USD/ticker".to_string())),
-        (3, (Asset::Btc, Venue::CoinGecko, "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_vol=true&x_cg_demo_api_key=CG-WQTijYYH1i47r2RDp5VQwKZV".to_string())),
-        (4, (Asset::Eth, Venue::CoinGecko, "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_vol=true&x_cg_demo_api_key=CG-WQTijYYH1i47r2RDp5VQwKZV".to_string())),
-        (5, (Asset::Solana, Venue::CoinGecko, "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_vol=true&x_cg_demo_api_key=CG-WQTijYYH1i47r2RDp5VQwKZV".to_string())),
+        (3, (Asset::Btc, Venue::CoinGecko, format!("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_vol=true&x_cg_demo_api_key={api_key}"))),
+        (4, (Asset::Eth, Venue::CoinGecko, format!("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_vol=true&x_cg_demo_api_key={api_key}"))),
+        (5, (Asset::Solana, Venue::CoinGecko, format!("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_vol=true&x_cg_demo_api_key={api_key}"))),
         (6, (Asset::Btc, Venue::Binance, "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=BTCUSDT".to_string())),
         (7, (Asset::Eth, Venue::Binance, "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=ETHUSDT".to_string())),
         (8, (Asset::Solana, Venue::Binance, "https://data-api.binance.vision/api/v3/ticker/24hr?symbol=SOLUSDT".to_string())),

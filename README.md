@@ -1,13 +1,27 @@
-API 
+# How to start the program
 
-Get in the Database:
-- docker compose up -d
-- docker ps
-- docker exec -it {hash_from_the_container} bash
-- psql -U user -d db
+## Start the database
+
+Run the following commands to start up the DB
+`docker compose up -d`
+
+Then to enter in the DB do the following
+`docker ps`
+`docker exec -it {hash_from_the_container\name_from_the_container} bash`
+`psql -U user -d db`
+
+
+## Start the Application
+
+Run `cargo run`
+
+to quit just press ctrl-c
+
+
+## Stop the database or delete it
 
 Stop Database:
-- docker compose down (At a '-v' at the end to delete the database contents)
+`docker compose down`
 
-Producer 3.34 sec
-Consumer 50-60 sec
+Stop and delete volume(content) of the database:
+`docker compose down -v`
