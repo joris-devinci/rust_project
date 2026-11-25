@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-25T14:32:10Z",
+  "title": "Design System: Lending simulation",
+  "extensions": {
+    "colorMeta": {
+      "river": {
+        "role": "primary",
+        "displayName": "River",
+        "canonical": "#0e3f4f",
+        "tonalRamp": [
+          "oklch(15% 0.016 224)",
+          "oklch(26% 0.027 224)",
+          "oklch(38% 0.039 224)",
+          "oklch(49% 0.051 224)",
+          "oklch(61% 0.051 224)",
+          "oklch(72% 0.039 224)",
+          "oklch(84% 0.027 224)",
+          "oklch(95% 0.016 224)"
+        ]
+      },
+      "river-deep": {
+        "role": "primary",
+        "displayName": "Deep River",
+        "canonical": "#0a303d",
+        "tonalRamp": [
+          "oklch(15% 0.013 225)",
+          "oklch(26% 0.023 225)",
+          "oklch(38% 0.033 225)",
+          "oklch(49% 0.043 225)",
+          "oklch(61% 0.043 225)",
+          "oklch(72% 0.033 225)",
+          "oklch(84% 0.023 225)",
+          "oklch(95% 0.013 225)"
+        ]
+      },
+      "water": {
+        "role": "secondary",
+        "displayName": "Water",
+        "canonical": "#2f86a6",
+        "tonalRamp": [
+          "oklch(15% 0.026 227)",
+          "oklch(26% 0.045 227)",
+          "oklch(38% 0.065 227)",
+          "oklch(49% 0.085 227)",
+          "oklch(61% 0.085 227)",
+          "oklch(72% 0.065 227)",
+          "oklch(84% 0.045 227)",
+          "oklch(95% 0.026 227)"
+        ]
+      },
+      "amber": {
+        "role": "tertiary",
+        "displayName": "Amber",
+        "canonical": "#f0b400",
+        "tonalRamp": [
+          "oklch(15% 0.045 84)",
+          "oklch(26% 0.079 84)",
+          "oklch(38% 0.113 84)",
+          "oklch(49% 0.148 84)",
+          "oklch(61% 0.148 84)",
+          "oklch(72% 0.113 84)",
+          "oklch(84% 0.079 84)",
+          "oklch(95% 0.045 84)"
+        ]
+      },
+      "amber-pale": {
+        "role": "tertiary",
+        "displayName": "Pale Amber",
+        "canonical": "#fbefc8",
+        "tonalRamp": [
+          "oklch(15% 0.014 93)",
+          "oklch(26% 0.025 93)",
+          "oklch(38% 0.036 93)",
+          "oklch(49% 0.047 93)",
+          "oklch(61% 0.047 93)",
+          "oklch(72% 0.036 93)",
+          "oklch(84% 0.025 93)",
+          "oklch(95% 0.014 93)"
+        ]
+      },
+      "limit": {
+        "role": "tertiary",
+        "displayName": "Limit Red",
+        "canonical": "#b92c26",
+        "tonalRamp": [
+          "oklch(15% 0.049 28)",
+          "oklch(26% 0.086 28)",
+          "oklch(38% 0.123 28)",
+          "oklch(49% 0.160 28)",
+          "oklch(61% 0.160 28)",
+          "oklch(72% 0.123 28)",
+          "oklch(84% 0.086 28)",
+          "oklch(95% 0.049 28)"
+        ]
+      },
+      "limit-light": {
+        "role": "tertiary",
+        "displayName": "Light Limit Red",
+        "canonical": "#ff6a5e",
+        "tonalRamp": [
+          "oklch(15% 0.050 27)",
+          "oklch(26% 0.088 27)",
+          "oklch(38% 0.127 27)",
+          "oklch(49% 0.165 27)",
+          "oklch(61% 0.165 27)",
+          "oklch(72% 0.127 27)",
+          "oklch(84% 0.088 27)",
+          "oklch(95% 0.050 27)"
+        ]
+      },
+      "mist": {
+        "role": "neutral",
+        "displayName": "Mist",
+        "canonical": "#cfe0de",
+        "tonalRamp": [
+          "oklch(15% 0.005 188)",
+          "oklch(26% 0.009 188)",
+          "oklch(38% 0.013 188)",
+          "oklch(49% 0.016 188)",
+          "oklch(61% 0.016 188)",
+          "oklch(72% 0.013 188)",
+          "oklch(84% 0.009 188)",
+          "oklch(95% 0.005 188)"
+        ]
+      },
+      "stone": {
+        "role": "neutral",
+        "displayName": "Stone",
+        "canonical": "#e6ecea",
+        "tonalRamp": [
+          "oklch(15% 0.002 174)",
+          "oklch(26% 0.003 174)",
+          "oklch(38% 0.005 174)",
+          "oklch(49% 0.006 174)",
+          "oklch(61% 0.006 174)",
+          "oklch(72% 0.005 174)",
+          "oklch(84% 0.003 174)",
+          "oklch(95% 0.002 174)"
+        ]
+      },
+      "stone-dark": {
+        "role": "neutral",
+        "displayName": "Dark Stone",
+        "canonical": "#d3deda",
+        "tonalRamp": [
+          "oklch(15% 0.004 172)",
+          "oklch(26% 0.006 172)",
+          "oklch(38% 0.009 172)",
+          "oklch(49% 0.012 172)",
+          "oklch(61% 0.012 172)",
+          "oklch(72% 0.009 172)",
+          "oklch(84% 0.006 172)",
+          "oklch(95% 0.004 172)"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#f7f9f8",
+        "tonalRamp": [
+          "oklch(15% 0.001 165)",
+          "oklch(26% 0.001 165)",
+          "oklch(38% 0.002 165)",
+          "oklch(49% 0.002 165)",
+          "oklch(61% 0.002 165)",
+          "oklch(72% 0.002 165)",
+          "oklch(84% 0.001 165)",
+          "oklch(95% 0.001 165)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#0e2f3a",
+        "tonalRamp": [
+          "oklch(15% 0.012 223)",
+          "oklch(26% 0.021 223)",
+          "oklch(38% 0.029 223)",
+          "oklch(49% 0.038 223)",
+          "oklch(61% 0.038 223)",
+          "oklch(72% 0.029 223)",
+          "oklch(84% 0.021 223)",
+          "oklch(95% 0.012 223)"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#3f5d66",
+        "tonalRamp": [
+          "oklch(15% 0.010 218)",
+          "oklch(26% 0.018 218)",
+          "oklch(38% 0.026 218)",
+          "oklch(49% 0.034 218)",
+          "oklch(61% 0.034 218)",
+          "oklch(72% 0.026 218)",
+          "oklch(84% 0.018 218)",
+          "oklch(95% 0.010 218)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "the utilization only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "welcome question (36px from 640px) and liquidation title."
+      },
+      "figure": {
+        "displayName": "Figure",
+        "purpose": "the margin in dollars."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "panel headings and status badges. The product name in the header is slightly larger (700, 20px)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "text and table values. Long text is capped at 65ch."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "buttons, field labels, row headers, totals."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "gauge graduations, chart caption, dollar values under quantities. Marks and caption warnings use 600."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "flood",
+        "value": "700ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The liquidation report rises from below (clip-path). Off when reduced motion is requested."
+      },
+      {
+        "name": "color-transition",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Button and switch colors (Tailwind default)."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Submits the action form, full width.",
+      "html": "<button type=\"button\" class=\"ds-btn-primary\">Borrow USD</button>",
+      "css": ".ds-btn-primary { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 600; border: 0; border-radius: 6px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); background: var(--color-river); color: #fff; padding: 12px 16px; width: 100%; } .ds-btn-primary:hover { background: var(--color-river-deep); } .ds-btn-primary:focus-visible { outline: 3px solid var(--color-water); outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Fills in the maximum amount, next to the field.",
+      "html": "<div class=\"ds-btn-secondary-ground\"><button type=\"button\" class=\"ds-btn-secondary\">Max</button></div>",
+      "css": ".ds-btn-secondary { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 600; border: 0; border-radius: 6px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); background: var(--color-stone); color: var(--color-ink); padding: 11px 16px; } .ds-btn-secondary:hover { background: var(--color-stone-dark); } .ds-btn-secondary:focus-visible { outline: 3px solid var(--color-water); outline-offset: 2px; } .ds-btn-secondary:disabled { opacity: 0.6; cursor: default; } .ds-btn-secondary-ground { background: var(--color-panel); padding: 16px; }"
+    },
+    {
+      "name": "Button on River",
+      "kind": "button",
+      "refersTo": "button-on-river",
+      "description": "Opens an account on the welcome panel.",
+      "html": "<div class=\"ds-btn-on-river-ground\"><button type=\"button\" class=\"ds-btn-on-river\">Open an account</button></div>",
+      "css": ".ds-btn-on-river { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 600; border: 0; border-radius: 6px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); background: #fff; color: var(--color-river); padding: 12px 20px; } .ds-btn-on-river:hover { background: var(--color-stone); } .ds-btn-on-river:focus-visible { outline: 3px solid #fff; outline-offset: 2px; } .ds-btn-on-river:disabled { opacity: 0.6; cursor: default; } .ds-btn-on-river-ground { background: var(--color-river); padding: 16px; }"
+    },
+    {
+      "name": "Header Button",
+      "kind": "button",
+      "refersTo": "button-header",
+      "description": "Quiet action in the header.",
+      "html": "<div class=\"ds-btn-header-ground\"><button type=\"button\" class=\"ds-btn-header\">Open another account</button></div>",
+      "css": ".ds-btn-header { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 600; border: 0; border-radius: 6px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); background: rgb(255 255 255 / 0.15); color: #fff; padding: 6px 12px; } .ds-btn-header:hover { background: rgb(255 255 255 / 0.25); } .ds-btn-header:focus-visible { outline: 3px solid #fff; outline-offset: 2px; } .ds-btn-header:disabled { opacity: 0.6; cursor: default; } .ds-btn-header-ground { background: var(--color-river); padding: 16px; }"
+    },
+    {
+      "name": "Action Switch",
+      "kind": "custom",
+      "refersTo": "segment-active",
+      "description": "Chooses deposit, borrow or repay.",
+      "html": "<div class=\"ds-switch\" role=\"group\" aria-label=\"Action\"><button type=\"button\" aria-pressed=\"false\">Deposit</button><button type=\"button\" aria-pressed=\"true\">Borrow</button><button type=\"button\" aria-pressed=\"false\">Repay</button></div>",
+      "css": ".ds-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 6px; background: var(--color-stone); } .ds-switch button { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; font-weight: 600; border: 0; border-radius: 4px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1); background: transparent; color: var(--color-ink); padding: 8px 12px; } .ds-switch button:hover { background: var(--color-stone-dark); } .ds-switch button[aria-pressed=\"true\"] { background: var(--color-river); color: #fff; } .ds-switch button:focus-visible { outline: 3px solid var(--color-water); outline-offset: 2px; }"
+    },
+    {
+      "name": "Amount Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Labelled decimal input.",
+      "html": "<label class=\"ds-field\"><span>Amount</span><input inputmode=\"decimal\" placeholder=\"0.0\"></label>",
+      "css": ".ds-field { font-family: Barlow, Helvetica, sans-serif; display: block; font-size: 16px; line-height: 24px; color: var(--color-ink); } .ds-field span { display: block; margin-bottom: 4px; font-weight: 600; } .ds-field input { width: 100%; box-sizing: border-box; font: inherit; color: inherit; background: #fff; padding: 10px 12px; border: 1px solid var(--color-ink-soft); border-radius: 6px; caret-color: var(--color-water); font-variant-numeric: tabular-nums; } .ds-field input::placeholder { color: var(--color-ink-soft); opacity: 1; } .ds-field input:focus-visible { outline: 3px solid var(--color-water); outline-offset: 2px; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "Health from the API: a word first, then a color.",
+      "html": "<div class=\"ds-badges\"><span class=\"ds-badge ds-badge-nodebt\">No debt</span><span class=\"ds-badge ds-badge-safe\">Safe</span><span class=\"ds-badge ds-badge-unsafe\">Unsafe</span><span class=\"ds-badge ds-badge-warning\">Warning</span><span class=\"ds-badge ds-badge-liquidatable\">Liquidatable</span></div>",
+      "css": ".ds-badges { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px; background: var(--color-river); } .ds-badge { font-family: Barlow, Helvetica, sans-serif; font-size: 18px; line-height: 28px; font-weight: 600; color: #fff; padding: 2px 10px; border: 2px solid; border-radius: 4px; } .ds-badge-nodebt { border-color: color-mix(in oklab, var(--color-mist) 60%, transparent); } .ds-badge-safe { border-color: var(--color-mist); } .ds-badge-unsafe { border-color: var(--color-amber); color: var(--color-amber); } .ds-badge-warning { border-color: var(--color-amber); background: var(--color-amber); color: var(--color-ink); } .ds-badge-liquidatable { border-color: #fff; background: var(--color-limit); }"
+    },
+    {
+      "name": "Price Panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Light flat panel with divided rows.",
+      "html": "<section class=\"ds-panel\"><h2>Oracle prices</h2><p>Median of Coinbase, Binance and CoinGecko</p><dl><div><dt>ETH</dt><dd>$3,000.00</dd></div><div><dt>USD</dt><dd>$1.00</dd></div></dl></section>",
+      "css": ".ds-panel { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; font-variant-numeric: tabular-nums; background: var(--color-panel); color: var(--color-ink); border-radius: 8px; padding: 24px; } .ds-panel h2 { margin: 0; font-size: 18px; line-height: 28px; font-weight: 600; } .ds-panel p { margin: 0 0 12px; color: var(--color-ink-soft); } .ds-panel dl { margin: 0; } .ds-panel dl div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--color-stone-dark); } .ds-panel dt { font-weight: 600; } .ds-panel dd { margin: 0; }"
+    },
+    {
+      "name": "Notice",
+      "kind": "custom",
+      "refersTo": "notice",
+      "description": "Error, lost account or stale values. Amber, never red.",
+      "html": "<p class=\"ds-notice\" role=\"alert\">The values below are the last ones received.</p>",
+      "css": ".ds-notice { font-family: Barlow, Helvetica, sans-serif; font-size: 16px; line-height: 24px; margin: 0; background: var(--color-amber-pale); color: var(--color-ink); border-radius: 8px; padding: 16px 20px; }"
+    },
+    {
+      "name": "Gauge",
+      "kind": "custom",
+      "refersTo": "hero",
+      "description": "Graduated staff, marks and water, shown at 75% unsafe, 90% warning and 100% limit.",
+      "html": "<div class=\"ds-gauge\"><div class=\"ds-gauge-staff\"><div class=\"ds-gauge-tick\" style=\"bottom: 0%\"><span>0%</span><i></i></div><div class=\"ds-gauge-tick\" style=\"bottom: 22.73%\"><span>25%</span><i></i></div><div class=\"ds-gauge-tick\" style=\"bottom: 45.45%\"><span>50%</span><i></i></div><div class=\"ds-gauge-tick ds-gauge-mark\" style=\"bottom: 68.18%\"><span>75% unsafe</span><i></i></div><div class=\"ds-gauge-tick ds-gauge-mark\" style=\"bottom: 81.82%\"><span>90% warning</span><i></i></div><div class=\"ds-gauge-tick ds-gauge-mark\" style=\"bottom: 90.91%\"><span>100% limit</span><i></i></div></div><div class=\"ds-gauge-water\"><svg viewBox=\"0 0 900 300\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path class=\"ds-gauge-fill\" d=\"M0,300 H300 V163.64 H560 V81.82 H900 V300 H0 Z\"/><path class=\"ds-gauge-line\" vector-effect=\"non-scaling-stroke\" d=\"M0,300 H300 V163.64 H560 V81.82 H900\"/></svg><div class=\"ds-gauge-75\"></div><div class=\"ds-gauge-90\"></div><div class=\"ds-gauge-100\"></div></div></div>",
+      "css": ".ds-gauge { font-family: Barlow, Helvetica, sans-serif; display: flex; background: var(--color-river); color: #fff; padding: 28px 0 16px 28px; border-radius: 8px; overflow: hidden; } .ds-gauge-staff { position: relative; width: 112px; height: 288px; flex-shrink: 0; box-sizing: border-box; border-right: 2px solid var(--color-mist); font-size: 14px; } .ds-gauge-tick { position: absolute; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; line-height: 1; transform: translateY(50%); color: var(--color-mist); } .ds-gauge-mark { color: #fff; font-weight: 600; } .ds-gauge-tick i { width: 10px; border-top: 2px solid var(--color-mist); } .ds-gauge-water { position: relative; flex: 1; min-width: 0; height: 288px; } .ds-gauge-water svg { position: absolute; inset: 0; width: 100%; height: 100%; } .ds-gauge-fill { fill: var(--color-water); } .ds-gauge-line { fill: none; stroke: #fff; stroke-width: 2; } .ds-gauge-75, .ds-gauge-90, .ds-gauge-100 { position: absolute; left: 0; right: 0; transform: translateY(50%); outline: 2px solid var(--color-river-deep); } .ds-gauge-75 { bottom: 68.18%; border-top: 1px solid var(--color-mist); } .ds-gauge-90 { bottom: 81.82%; border-top: 2px solid var(--color-amber); } .ds-gauge-100 { bottom: 90.91%; border-top: 4px solid var(--color-limit-light); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Flood Marks",
+    "overview": "A flood gauge beside a river. Debt is the water, borrowing power is the graduated staff, and 100% is the mark it must not pass. One dark river panel carries the level; everything else is quiet, pale and flat around it.\n\nTokens live in the `@theme` block of `app/globals.css`. Values without a token (type sizes, radii, spacing) are Tailwind 4 defaults.",
+    "keyCharacteristics": [
+      "Dark river panel on pale stone ground",
+      "One family, Barlow, in three weights, with tabular figures",
+      "Flat surfaces, no shadows",
+      "Red means the limit, and nothing else",
+      "Every color state is also written in words"
+    ],
+    "rules": [
+      {
+        "name": "The Reserved Red Rule",
+        "body": "Both reds belong to the 100% mark and to liquidation. A form error, a lost account or a stale price is amber.",
+        "section": "colors"
+      },
+      {
+        "name": "The Word First Rule",
+        "body": "Color never carries a state alone: each badge shows its name, and each gauge mark is labelled.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Figures are tabular on the whole page, so a price tick never shifts the layout.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do use the tokens of `@theme` for every color.",
+      "Do write the state in words next to its color.",
+      "Do say when a value is observed, stale, frozen or zoomed.",
+      "Do keep one display-size figure: the utilization."
+    ],
+    "donts": [
+      "Don't use either red outside the 100% mark and liquidation.",
+      "Don't add shadows: use the tonal steps.",
+      "Don't smooth the water between two observations."
+    ]
+  }
+}
